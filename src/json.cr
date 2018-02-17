@@ -88,30 +88,8 @@ LibMarpa.marpa_g_precompute(g)
 r = LibMarpa.marpa_r_new(g)
 LibMarpa.marpa_r_start_input(r)
 
-# input = %([1, "abc\ndef", -2.3, null, [], true, false, [1, 2, 3], {}, { "a": 1, "b": 2 }])
-input = %({
-  "glossary": {
-    "title": "example glossary",
-    "GlossDiv": {
-      "title": "S",
-      "GlossList": {
-        "GlossEntry": {
-          "ID": "SGML",
-          "SortAs": "SGML",
-          "GlossTerm": "Standard Generalized Markup Language",
-          "Acronym": "SGML",
-          "Abbrev": "ISO 8879:1986",
-          "GlossDef": {
-            "para":
-              "A meta-markup language, used to create markup languages such as DocBook.",
-            "GlossSeeAlso": ["GML", "XML"]
-          },
-          "GlossSee": "markup"
-        }
-      },"a":{}
-    }
-  }
-})
+input = %([1, "abc\ndef", -2.3, null, [], true, false, [1, 2e5, 3], {}, { "a": 1, "b": 2 }])
+# input = %q([[[[[[[[[[[[[[[]]]]]]]]]],[[[[[[[[[]]]]]]]]]]]]]])
 
 tokens = [
   { %r((?<s_begin_object>\{)), "s_begin_object" },
@@ -121,7 +99,7 @@ tokens = [
   { %r((?<s_value_separator>,)), "s_value_separator" },
   { %r((?<s_name_separator>:)), "s_name_separator" },
   { %r((?<s_string>\"[^\"]+\")), "s_string" },
-  { %r((?<s_number>-?[\d]+[\.\d+]*)), "s_number" },
+  { %r((?<s_number>-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)), "s_number" },
   { %r((?<s_true>true)), "s_true" },
   { %r((?<s_false>false)), "s_false" },
   { %r((?<s_null>null)), "s_null" },
@@ -142,14 +120,14 @@ input.scan(token_regex) do |match|
   if symbol == "s_none"
     # Do nothing
   elsif symbol == "s_mismatch"
-    raise "Lexing error at column #{position}"
+    raise "Lexing error at #{position}"
   else
     status = LibMarpa.marpa_r_alternative(r, symbol_name.key(symbol), position + 1, 1)
 
     if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
       expected = uninitialized LibMarpa::MarpaSymbolId
       count_of_expected = LibMarpa.marpa_r_terminals_expected(r, pointerof(expected))
-      raise "Unexpected symbol at column #{position}, expected : #{symbol_name[expected]}"
+      raise "Unexpected symbol at #{position}, expected : #{symbol_name[expected]}"
     end
 
     status = LibMarpa.marpa_r_earleme_complete(r)
@@ -191,7 +169,6 @@ if !value
   raise "Value returned #{e}"
 end
 
-column = 0
 loop do
   step_type = LibMarpa.marpa_v_step(value)
 
@@ -199,56 +176,51 @@ loop do
   when step_type.value < 0
     e = LibMarpa.marpa_g_error(g, p_error_string)
     raise "Event returned #{e}"
+  when LibMarpa::MarpaStepType::MARPA_STEP_RULE
+    #
+  when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
+    #
+  when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
+    #
   when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
     break
+  when LibMarpa::MarpaStepType::MARPA_STEP_INITIAL
+    #
   end
 
   token = value.value
   id = token.t_token_id
+  start = token.t_token_value
+  rule_id = token.t_rule_id
+  ys_id = (token.t_ys_id - 1).to_s
+  result = token.t_result.to_s
+  child = token.t_arg_0.to_s
+  print "#{ys_id.rjust(2)} : #{symbol_name[id].ljust(17)} #{child.rjust(2)}\n"
 
-  if column > 60
-    column = 0
-  end
-
-  if true
-    case id
-    when s_begin_array
-      print "[\n"
-      column += 2
-    when s_end_array
-      print "]\n"
-      column -= 2
-    when s_begin_object
-      print "{\n"
-      column += 2
-    when s_end_object
-      print "}\n"
-      column -= 2
-    when s_name_separator
-      print " : "
-      column += 1
-    when s_value_separator
-      print ",\n"
-      column += 0
-    when s_null
-      print "null"
-      column += 4
-    when s_true
-      print "true"
-      column += 4
-    when s_false
-      print "false"
-      column += 5
-    when s_number
-      start_of_number = token.t_token_value
-      print "#{token_values[start_of_number - 1]}"
-      column += token_values[start_of_number - 1].size
-    when s_string
-      start_of_string = token.t_token_value
-      print "#{token_values[start_of_string - 1]}"
-      column += token_values[start_of_string - 1].size
-    end
-  end
+  # case id
+  # when s_begin_array
+  #   print "["
+  # when s_end_array
+  #   print "]"
+  # when s_begin_object
+  #   print "{"
+  # when s_end_object
+  #   print "}"
+  # when s_name_separator
+  #   print ":"
+  # when s_value_separator
+  #   print ","
+  # when s_null
+  #   print "null"
+  # when s_true
+  #   print "true"
+  # when s_false
+  #   print "false"
+  # when s_number
+  #   start_of_number = token.t_token_value
+  #   print "#{token_values[start_of_number - 1]}"
+  # when s_string
+  #   start_of_string = token.t_token_value
+  #   print "#{token_values[start_of_string - 1]}"
+  # end
 end
-
-print "\n"
