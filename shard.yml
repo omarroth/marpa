@@ -1,0 +1,13 @@
+name: marpa_cr
+version: 0.1.0
+
+authors:
+  - Omar Roth <omarroth@hotmail.com>
+
+targets:
+  marpa_cr:
+    main: src/marpa_cr.cr
+
+crystal: 0.24.1
+
+license: MIT
