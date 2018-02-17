@@ -1,4 +1,4 @@
-name: marpa_cr
+name: marpa
 version: 0.1.0
 
 authors:
@@ -6,7 +6,7 @@ authors:
 
 targets:
   marpa_cr:
-    main: src/marpa_cr.cr
+    main: src/marpa.cr
 
 crystal: 0.24.1
 
