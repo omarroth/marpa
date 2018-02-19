@@ -161,12 +161,8 @@ if !value
   raise "Value returned #{e}"
 end
 
-values_sorted = token_values.to_a.sort_by { |a, b| b.size }
-longest_token_length = values_sorted[-1][1].size + 1
 alias RecArray = String | Array(RecArray)
 stack = [] of RecArray
-
-# stack = [] of {Int32, String}
 
 loop do
   step_type = LibMarpa.marpa_v_step(value)
@@ -181,8 +177,6 @@ loop do
     start = rule.t_arg_0
     stop = rule.t_arg_n
 
-    puts rule
-
     if stop - start > 0 || rule.t_rule_id == 1
       tmp = [] of RecArray
       tmp = stack[start..stop]
@@ -193,7 +187,6 @@ loop do
   when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
     token = value.value
     token_value = token_values[token.t_token_value - 1]
-    puts token_value
     stack << token_value
   when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
     #
