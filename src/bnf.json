@@ -1,0 +1,81 @@
+[
+  [":start", "::=", "statements"],
+  ["statements", "::=", "statement", "+"],
+  [
+    "statement",
+    "::=",
+    "<start rule>",
+    "|",
+    "<priority rule>",
+    "|",
+    "<discard rule>",
+    "|",
+    "<quantified rule>"
+  ],
+  ["<start rule>", "::=", "':start'", "<op declare bnf>", "symbol"],
+  ["<priority rule>", "::=", "lhs", "<op declare>", "priorities"],
+  [
+    "<discard rule>",
+    "::=",
+    "':discard'",
+    "<op declare match>",
+    "<single symbol>"
+  ],
+  [
+    "<quantified rule>",
+    "::=",
+    "lhs",
+    "<op declare>",
+    "<single symbol>",
+    "quantifier"
+  ],
+  ["<op declare>", "::=", "<op declare bnf>", "|", "<op declare match>"],
+  ["<op declare bnf>", "~", "'::='"],
+  ["<op declare match>", "~", "'~'"],
+  [":discard", "~", "whitespace"],
+  ["whitespace", "~", "[", "s", "]"],
+  ["+"],
+  ["priorities", "::=", "alternatives", "+"],
+  ["alternatives", "::=", "alternative", "+"],
+  ["alternative", "::=", "rhs"],
+  ["lhs", "::=", "<symbol name>"],
+  ["rhs", "::=", "<rhs primary>", "+"],
+  [
+    "<rhs primary>",
+    "::=",
+    "<single symbol>",
+    "|",
+    "<single quoted string>",
+    "|",
+    "<parenthesized rhs primary list>"
+  ],
+  [
+    "<parenthesized rhs primary list>",
+    "::=",
+    "'('",
+    "<rhs primary list>",
+    "')'"
+  ],
+  ["<rhs primary list>", "::=", "<rhs primary>", "+"],
+  ["<character class modifiers>", "~", "<character class modifier>", "*"],
+  ["<character class modifier>", "~", "':ic'"],
+  ["<character class modifier>", "~", "':i'"],
+  ["<single symbol>", "::=", "symbol", "|", "<character class>"],
+  ["symbol", "::=", "<symbol name>"],
+  ["<symbol name>", "::=", "<bare name>", "|", "<bracketed name>"],
+  ["<bare name>", "~", "[", "w", "]"],
+  ["+"],
+  ["<bracketed name>", "~", "'<'", "<bracketed name string>", "'>'"],
+  ["<bracketed name string>", "~", "[", "sw", "]"],
+  ["+"],
+  [
+    "<character class>",
+    "~",
+    "'['",
+    "<cc elements>",
+    "']'",
+    "<character class modifiers>"
+  ],
+  ["<cc elements>", "~", "<cc element>", "+"],
+  ["<cc element>", "~", "<safe cc character>", "|", "<escaped cc character>"]
+]

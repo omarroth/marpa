@@ -1,8 +1,3 @@
-require "string_scanner"
-require "./lib_marpa"
-
-marpa = LibMarpa
-
 config = uninitialized LibMarpa::MarpaConfig
 LibMarpa.marpa_c_init(pointerof(config))
 
@@ -27,7 +22,7 @@ s_object = LibMarpa.marpa_g_symbol_new(g)
 s_object_contents = LibMarpa.marpa_g_symbol_new(g)
 s_array_contents = LibMarpa.marpa_g_symbol_new(g)
 
-symbol_name = {0 => "s_start"}
+symbol_name = {} of Int32 => String
 symbol_name[s_begin_object] = "s_begin_object"
 symbol_name[s_end_object] = "s_end_object"
 symbol_name[s_begin_array] = "s_begin_array"
@@ -46,6 +41,8 @@ symbol_name[s_object] = "s_object"
 
 symbol_name[s_object_contents] = "s_object_contents"
 symbol_name[s_array_contents] = "s_array_contents"
+
+symbol_name[-1] = "nil"
 
 rhs = [0, 0, 0, 0]
 
@@ -88,8 +85,11 @@ LibMarpa.marpa_g_precompute(g)
 r = LibMarpa.marpa_r_new(g)
 LibMarpa.marpa_r_start_input(r)
 
-input = %([1, "abc\ndef", -2.3, null, [], true, false, [1, 2e5, 3], {}, { "a": 1, "b": 2 }])
-# input = %q([[[[[[[[[[[[[[[]]]]]]]]]],[[[[[[[[[]]]]]]]]]]]]]])
+input =
+  %(["asdf", "asdf"])
+# %([[[[[[[[[[[[[[[]]]]]]]]]],[[[[[[[[]]]]]]]]]]]]])
+# %([1, "abc\ndef", -2.3, null, [], true, false, false ,[1, 2e5, 3], {}, { "a": 1, "b": 2 }])
+# %q([[]])
 
 tokens = [
   { %r((?<s_begin_object>\{)), "s_begin_object" },
@@ -125,9 +125,16 @@ input.scan(token_regex) do |match|
     status = LibMarpa.marpa_r_alternative(r, symbol_name.key(symbol), position + 1, 1)
 
     if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-      expected = uninitialized LibMarpa::MarpaSymbolId
-      count_of_expected = LibMarpa.marpa_r_terminals_expected(r, pointerof(expected))
-      raise "Unexpected symbol at #{position}, expected : #{symbol_name[expected]}"
+      buffer = uninitialized Int32[128]
+      size = LibMarpa.marpa_r_terminals_expected(r, buffer)
+      slice = buffer.to_slice[0, size]
+
+      msg = "Unexpected symbol at #{position}, expected:\n"
+      slice.each do |id|
+        msg += symbol_name[id] + "\n"
+      end
+
+      raise msg
     end
 
     status = LibMarpa.marpa_r_earleme_complete(r)
@@ -135,6 +142,7 @@ input.scan(token_regex) do |match|
       e = LibMarpa.marpa_g_error(g, out p_error_string)
       raise "Earleme complete #{e}"
     end
+
     token_values[position] = value
   end
 end
@@ -169,6 +177,7 @@ if !value
   raise "Value returned #{e}"
 end
 
+stack = [] of {Int32, String}
 loop do
   step_type = LibMarpa.marpa_v_step(value)
 
@@ -189,38 +198,45 @@ loop do
   end
 
   token = value.value
-  id = token.t_token_id
-  start = token.t_token_value
-  rule_id = token.t_rule_id
-  ys_id = (token.t_ys_id - 1).to_s
-  result = token.t_result.to_s
-  child = token.t_arg_0.to_s
-  print "#{ys_id.rjust(2)} : #{symbol_name[id].ljust(17)} #{child.rjust(2)}\n"
+  token_result = token.t_result
+  token_value = token.t_token_value
 
-  # case id
-  # when s_begin_array
-  #   print "["
-  # when s_end_array
-  #   print "]"
-  # when s_begin_object
-  #   print "{"
-  # when s_end_object
-  #   print "}"
-  # when s_name_separator
-  #   print ":"
-  # when s_value_separator
-  #   print ","
-  # when s_null
-  #   print "null"
-  # when s_true
-  #   print "true"
-  # when s_false
-  #   print "false"
-  # when s_number
-  #   start_of_number = token.t_token_value
-  #   print "#{token_values[start_of_number - 1]}"
-  # when s_string
-  #   start_of_string = token.t_token_value
-  #   print "#{token_values[start_of_string - 1]}"
-  # end
+  stack << {token_result, token_values[token_value - 1]}
 end
+
+# Time to pop
+
+alias RecArray = String | Array(RecArray)
+
+state = [] of RecArray
+current = [] of RecArray
+previous = -1
+
+stack.size.times do
+  item = stack.shift
+
+  if item[0] <= previous
+    state << current
+    current = [] of RecArray
+  end
+
+  current << item[1]
+  previous = item[0]
+end
+
+def pretty(rec_array : RecArray, spacing = 0)
+  if rec_array.is_a?(Array)
+    print " " * spacing
+    puts "["
+    rec_array.each do |item|
+      print " " * spacing
+      puts pretty(item, spacing + 2)
+    end
+    print " " * spacing
+    print "]"
+  else
+    return " " * spacing + rec_array
+  end
+end
+
+puts pretty(state)
