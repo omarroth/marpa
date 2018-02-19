@@ -21,4 +21,3 @@ print "Trying to parse:\n$input\n\n";
 $re->read(\$input);
 my $value = ${$re->value};
 print "Output:\n".Dumper($value);
-

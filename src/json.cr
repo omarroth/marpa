@@ -2,6 +2,7 @@ config = uninitialized LibMarpa::MarpaConfig
 LibMarpa.marpa_c_init(pointerof(config))
 
 g = LibMarpa.marpa_g_new(pointerof(config))
+LibMarpa.marpa_g_force_valued(g)
 
 s_begin_object = LibMarpa.marpa_g_symbol_new(g)
 s_end_object = LibMarpa.marpa_g_symbol_new(g)
