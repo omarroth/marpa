@@ -84,16 +84,17 @@ Allow @admins
 INPUT
 
 tokens = [
-  { %r((?<s_cmd_type>Deny|Allow)), "s_cmd_type" },
-  { %r((?<s_list_ref>@[\w]+)), "s_list_ref" },
-  { %r((?<s_username>[\w]+)), "s_username" },
-  { %r((?<s_equals>=)), "s_equals" },
-  { %r((?<s_none>[\s]+)), "s_none" },
-  { %r((?<s_mismatch>.)), "s_mismatch" },
+  {"(?<s_cmd_type>Deny|Allow)", "s_cmd_type"},
+  {"(?<s_list_ref>@[\\w]+)", "s_list_ref"},
+  {"(?<s_username>[\\w]+)", "s_username"},
+  {"(?<s_equals>=)", "s_equals"},
+  {"(?<s_none>[\\s]+)", "s_none"},
+  {"(?<s_mismatch>.)", "s_mismatch"},
 ]
 
 # LEXER
-token_regex = Regex.union(tokens.map { |a| a[0] })
+token_regex = Regex.union(tokens.map { |a, b| /#{a}/ })
+
 token_values = {} of Int32 => String
 
 input.scan(token_regex) do |match|
@@ -197,4 +198,5 @@ loop do
   end
 end
 
-puts stack[0]
+stack = stack[0]
+puts stack

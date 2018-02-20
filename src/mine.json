@@ -1,5 +1,22 @@
 [
-  [["admins", "=", ["admin", "root", "administrator", "peter"]]],
-  ["Deny", "baduser"],
-  ["Allow", "@admins"]
+  [
+    [
+      "admins",
+      "=",
+      [
+        "admin",
+        "root",
+        "administrator",
+        "peter"
+      ]
+    ]
+  ],
+  [
+    "Deny",
+    "baduser"
+  ],
+  [
+    "Allow",
+    "@admins"
+  ]
 ]
