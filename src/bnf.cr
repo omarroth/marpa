@@ -1,21 +1,4 @@
 input = <<-BNF
-:start ::= statements
-statements ::= statement+
-statement ::= <start rule> | <priority rule>
-  | <discard rule>
-  | <quantified rule>
-
-<start rule> ::= ':start' <op declare bnf> symbol
-<priority rule> ::= lhs <op declare> priorities
-<discard rule> ::= ':discard' <op declare match> <single symbol>
-<quantified rule> ::= lhs <op declare> <single symbol> quantifier
-
-<op declare> ::= <op declare bnf> | <op declare match>
-<op declare bnf> ~ '::='
-<op declare match> ~ '~'
-
-:discard ~ whitespace
-whitespace ~ [\s]+
 
 priorities ::= alternatives+
 alternatives ::= alternative+
@@ -43,7 +26,6 @@ symbol ::= <symbol name>
 <cc elements> ~ <cc element>+
 <cc element> ~ <safe cc character> | <escaped cc character>
 
-quantifier ::= '*' | '+'
 BNF
 
 config = uninitialized LibMarpa::MarpaConfig
