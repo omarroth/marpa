@@ -1,9 +1,3 @@
-# Copyright (c) 2013 Peter Stuifzand
-use strict;
-use Marpa::R2;
-use Data::Dumper;
-
-my $input = <<'INPUT';
 :start ::= statements
 statements ::= statement+
 statement ::= <start rule>
@@ -56,23 +50,9 @@ boolean ~ [01]
 <bracketed name string> ~ [\s\w]+
 
 <single quoted string> ~ ['] <string without single quote or vertical space> [']
-<string without single quote or vertical space> ~ [^'\x{0A}\x{0B}\x{0C}\x{0D}\x{0085}\x{2028}\x{2029}]+
+<string without single quote or vertical space> ~ [^'\x0A\x0B\x0C\x0D\u0085\u2028\u2029]+
 
 <character class> ~ '[' <cc elements> ']' 
 <cc elements> ~ <cc element>+
 <cc element> ~ <safe cc character>
-<safe cc character> ~ [^\x{5d}\x{0A}\x{0B}\x{0C}\x{0D}\x{0085}\x{2028}\x{2029}]
-INPUT
-
-my $g = Marpa::R2::Scanless::G->new(
-	{
-		default_action => '::array',
-		source         => \$input,
-	}
-);
-
-my $re = Marpa::R2::Scanless::R->new({ grammar => $g });
-
-$re->read(\$input);
-my $value = ${$re->value};
-print Dumper($value);
+<safe cc character> ~ [^\x5d\x0A\x0B\x0C\x0D\u0085\u2028\u2029]

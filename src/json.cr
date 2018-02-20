@@ -1,3 +1,5 @@
+require "./lib_marpa"
+
 config = uninitialized LibMarpa::MarpaConfig
 LibMarpa.marpa_c_init(pointerof(config))
 
@@ -87,30 +89,26 @@ r = LibMarpa.marpa_r_new(g)
 LibMarpa.marpa_r_start_input(r)
 
 input =
-  %(["asdf", "asdf"])
-# %([[[[[[[[[[[[[[[]]]]]]]]]],[[[[[[[[]]]]]]]]]]]]])
-# %([1, "abc\ndef", -2.3, null, [], true, false, false ,[1, 2e5, 3], {}, { "a": 1, "b": 2 }])
-# %q([[]])
+  %([1, "abc\ndef", -2.3, null, [], true, false, false ,[1, 2e5, 3], {}, { "a": 1, "b": 2 }])
 
 tokens = [
-  { %r((?<s_begin_object>\{)), "s_begin_object" },
-  { %r((?<s_end_object>\})), "s_end_object" },
-  { %r((?<s_begin_array>\[)), "s_begin_array" },
-  { %r((?<s_end_array>\])), "s_end_array" },
-  { %r((?<s_value_separator>,)), "s_value_separator" },
-  { %r((?<s_name_separator>:)), "s_name_separator" },
-  { %r((?<s_string>\"[^\"]+\")), "s_string" },
-  { %r((?<s_number>-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)), "s_number" },
-  { %r((?<s_true>true)), "s_true" },
-  { %r((?<s_false>false)), "s_false" },
-  { %r((?<s_null>null)), "s_null" },
-  { %r((?<s_none>[ \t]+)), "s_none" },
-  { %r((?<s_none>\n)), "s_none" },
-  { %r((?<s_mismatch>.)), "s_mismatch" },
+  {"(?<s_begin_object>\\{)", "s_begin_object"},
+  {"(?<s_end_object>\\})", "s_end_object"},
+  {"(?<s_begin_array>\\[)", "s_begin_array"},
+  {"(?<s_end_array>\\])", "s_end_array"},
+  {"(?<s_value_separator>,)", "s_value_separator"},
+  {"(?<s_name_separator>:)", "s_name_separator"},
+  {"(?<s_string>\\\"[^\\\"]+\\\")", "s_string"},
+  {"(?<s_number>-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)", "s_number"},
+  {"(?<s_true>true)", "s_true"},
+  {"(?<s_false>false)", "s_false"},
+  {"(?<s_null>null)", "s_null"},
+  {"(?<s_none>[ \\t]+)", "s_none"},
+  {"(?<s_none>\\n)", "s_none"},
+  {"(?<s_mismatch>.)", "s_mismatch"},
 ]
 
-# LEXER
-token_regex = Regex.union(tokens.map { |a| a[0] })
+token_regex = Regex.union(tokens.map { |a, b| /#{a}/ })
 token_values = {} of Int32 => String
 
 input.scan(token_regex) do |match|
@@ -178,7 +176,9 @@ if !value
   raise "Value returned #{e}"
 end
 
-stack = [] of {Int32, String}
+alias RecArray = String | Array(RecArray)
+stack = [] of RecArray
+
 loop do
   step_type = LibMarpa.marpa_v_step(value)
 
@@ -187,9 +187,22 @@ loop do
     e = LibMarpa.marpa_g_error(g, p_error_string)
     raise "Event returned #{e}"
   when LibMarpa::MarpaStepType::MARPA_STEP_RULE
-    #
+    rule = value.value
+
+    start = rule.t_arg_0
+    stop = rule.t_arg_n
+
+    if stop - start > 0
+      tmp = [] of RecArray
+      tmp = stack[start..stop]
+      stack.delete_at(start..stop)
+
+      stack << tmp
+    end
   when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
-    #
+    token = value.value
+    token_value = token_values[token.t_token_value - 1]
+    stack << token_value
   when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
     #
   when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
@@ -197,47 +210,7 @@ loop do
   when LibMarpa::MarpaStepType::MARPA_STEP_INITIAL
     #
   end
-
-  token = value.value
-  token_result = token.t_result
-  token_value = token.t_token_value
-
-  stack << {token_result, token_values[token_value - 1]}
 end
 
-# Time to pop
-
-alias RecArray = String | Array(RecArray)
-
-state = [] of RecArray
-current = [] of RecArray
-previous = -1
-
-stack.size.times do
-  item = stack.shift
-
-  if item[0] <= previous
-    state << current
-    current = [] of RecArray
-  end
-
-  current << item[1]
-  previous = item[0]
-end
-
-def pretty(rec_array : RecArray, spacing = 0)
-  if rec_array.is_a?(Array)
-    print " " * spacing
-    puts "["
-    rec_array.each do |item|
-      print " " * spacing
-      puts pretty(item, spacing + 2)
-    end
-    print " " * spacing
-    print "]"
-  else
-    return " " * spacing + rec_array
-  end
-end
-
-puts pretty(state)
+stack = stack[0]
+pp stack

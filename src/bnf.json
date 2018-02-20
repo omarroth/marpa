@@ -1,81 +1,267 @@
 [
-  [":start", "::=", "statements"],
-  ["statements", "::=", "statement", "+"],
+  [[[["statements"]]]],
+  [[[["statements"]], ["::="], [[["statement"]]], ["+"], ["undef"]]],
   [
-    "statement",
-    "::=",
-    "<start rule>",
-    "|",
-    "<priority rule>",
-    "|",
-    "<discard rule>",
-    "|",
-    "<quantified rule>"
-  ],
-  ["<start rule>", "::=", "':start'", "<op declare bnf>", "symbol"],
-  ["<priority rule>", "::=", "lhs", "<op declare>", "priorities"],
-  [
-    "<discard rule>",
-    "::=",
-    "':discard'",
-    "<op declare match>",
-    "<single symbol>"
+    [
+      [["statement"]],
+      ["::="],
+      [
+        [[[[[["<start rule>"]]]]], ["undef"]],
+        [[[[[["<priority rule>"]]]]], ["undef"]],
+        [[[[[["<quantified rule>"]]]]], ["undef"]],
+        [[[[[["<discard rule>"]]]]], ["undef"]]
+      ]
+    ]
   ],
   [
-    "<quantified rule>",
-    "::=",
-    "lhs",
-    "<op declare>",
-    "<single symbol>",
-    "quantifier"
-  ],
-  ["<op declare>", "::=", "<op declare bnf>", "|", "<op declare match>"],
-  ["<op declare bnf>", "~", "'::='"],
-  ["<op declare match>", "~", "'~'"],
-  [":discard", "~", "whitespace"],
-  ["whitespace", "~", "[", "s", "]"],
-  ["+"],
-  ["priorities", "::=", "alternatives", "+"],
-  ["alternatives", "::=", "alternative", "+"],
-  ["alternative", "::=", "rhs"],
-  ["lhs", "::=", "<symbol name>"],
-  ["rhs", "::=", "<rhs primary>", "+"],
-  [
-    "<rhs primary>",
-    "::=",
-    "<single symbol>",
-    "|",
-    "<single quoted string>",
-    "|",
-    "<parenthesized rhs primary list>"
+    [
+      [["<start rule>"]],
+      ["::="],
+      [
+        [
+          [[[[["\":start\""], [[[["<op declare bnf>"]]]]]]], [[[["symbol"]]]]],
+          ["undef"]
+        ]
+      ]
+    ]
   ],
   [
-    "<parenthesized rhs primary list>",
-    "::=",
-    "'('",
-    "<rhs primary list>",
-    "')'"
+    [
+      [["<priority rule>"]],
+      ["::="],
+      [
+        [
+          [[[[["lhs"]]]], [[[["<op declare>"]]]], [[[["alternatives"]]]]],
+          ["undef"]
+        ]
+      ]
+    ]
   ],
-  ["<rhs primary list>", "::=", "<rhs primary>", "+"],
-  ["<character class modifiers>", "~", "<character class modifier>", "*"],
-  ["<character class modifier>", "~", "':ic'"],
-  ["<character class modifier>", "~", "':i'"],
-  ["<single symbol>", "::=", "symbol", "|", "<character class>"],
-  ["symbol", "::=", "<symbol name>"],
-  ["<symbol name>", "::=", "<bare name>", "|", "<bracketed name>"],
-  ["<bare name>", "~", "[", "w", "]"],
-  ["+"],
-  ["<bracketed name>", "~", "'<'", "<bracketed name string>", "'>'"],
-  ["<bracketed name string>", "~", "[", "sw", "]"],
-  ["+"],
   [
-    "<character class>",
-    "~",
-    "'['",
-    "<cc elements>",
-    "']'",
-    "<character class modifiers>"
+    [
+      [["<quantified rule>"]],
+      ["::="],
+      [
+        [
+          [
+            [[[["lhs"]]]],
+            [[[["<op declare>"]]]],
+            [[[["<single symbol>"]]]],
+            [[[["quantifier"]]]],
+            [[[["<adverb list>"]]]]
+          ],
+          ["undef"]
+        ]
+      ]
+    ]
   ],
-  ["<cc elements>", "~", "<cc element>", "+"],
-  ["<cc element>", "~", "<safe cc character>", "|", "<escaped cc character>"]
+  [
+    [
+      [["<discard rule>"]],
+      ["::="],
+      [
+        [
+          [
+            [[[["\":discard\""], [[[["<op declare match>"]]]]]]],
+            [[[["<single symbol>"]]]]
+          ],
+          ["undef"]
+        ]
+      ]
+    ]
+  ],
+  [
+    [
+      [["<op declare>"]],
+      ["::="],
+      [
+        [[[[[["<op declare bnf>"]]]]], ["undef"]],
+        [[[[[["<op declare match>"]]]]], ["undef"]]
+      ]
+    ]
+  ],
+  [
+    [
+      [["alternatives"]],
+      ["::="],
+      [[["alternative"]]],
+      ["+"],
+      [[[[[[["<op equal priority>"]]]]], [["1"]]]]
+    ]
+  ],
+  [
+    [
+      [["alternative"]],
+      ["::="],
+      [[[[[[["rhs"]]]], [[[["<adverb list>"]]]]], ["undef"]]]
+    ]
+  ],
+  [
+    [
+      [["<adverb list>"]],
+      ["::="],
+      [[[[[[["<adverb list items>"]]]]], ["undef"]]]
+    ]
+  ],
+  [
+    [
+      [["<adverb list items>"]],
+      ["::="],
+      [[["<adverb item>"]]],
+      ["*"],
+      ["undef"]
+    ]
+  ],
+  [
+    [
+      [["<adverb item>"]],
+      ["::="],
+      [
+        [[[[[["<separator specification>"]]]]], ["undef"]],
+        [[[[[["<proper specification>"]]]]], ["undef"]]
+      ]
+    ]
+  ],
+  [
+    [
+      [["<separator specification>"]],
+      ["::="],
+      [
+        [
+          [[[[["\"separator\""], ["\"=>\""]]]], [[[["<single symbol>"]]]]],
+          ["undef"]
+        ]
+      ]
+    ]
+  ],
+  [
+    [
+      [["<proper specification>"]],
+      ["::="],
+      [[[[[[["\"proper\""], ["\"=>\""]]]], [[[["boolean"]]]]], ["undef"]]]
+    ]
+  ],
+  [[[["lhs"]], ["::="], [[[[[[["<symbol name>"]]]]], ["undef"]]]]],
+  [[[["rhs"]], ["::="], [[["<rhs primary>"]]], ["+"], ["undef"]]],
+  [
+    [
+      [["<rhs primary>"]],
+      ["::="],
+      [
+        [[[[[["<single symbol>"]]]]], ["undef"]],
+        [[[[[["<single quoted string>"]]]]], ["undef"]],
+        [[[[[["<parenthesized rhs primary list>"]]]]], ["undef"]]
+      ]
+    ]
+  ],
+  [
+    [
+      [["<parenthesized rhs primary list>"]],
+      ["::="],
+      [
+        [
+          [[[[["\"(\""]]]], [[[["<rhs primary list>"]]]], [[[["\")\""]]]]],
+          ["undef"]
+        ]
+      ]
+    ]
+  ],
+  [
+    [[["<rhs primary list>"]], ["::="], [[["<rhs primary>"]]], ["+"], ["undef"]]
+  ],
+  [
+    [
+      [["<single symbol>"]],
+      ["::="],
+      [
+        [[[[[["symbol"]]]]], ["undef"]],
+        [[[[[["<character class>"]]]]], ["undef"]]
+      ]
+    ]
+  ],
+  [[[["symbol"]], ["::="], [[[[[[["<symbol name>"]]]]], ["undef"]]]]],
+  [
+    [
+      [["<symbol name>"]],
+      ["::="],
+      [
+        [[[[[["<bare name>"]]]]], ["undef"]],
+        [[[[[["<bracketed name>"]]]]], ["undef"]]
+      ]
+    ]
+  ],
+  [[[[["whitespace"]]]]],
+  [[[["whitespace"]], ["~"], ["[\\s]"], ["+"], ["undef"]]],
+  [[[["<op declare bnf>"]], ["~"], [[[["\"::=\""]], ["undef"]]]]],
+  [[[["<op declare match>"]], ["~"], [[[["\"~\""]], ["undef"]]]]],
+  [[[["<op equal priority>"]], ["~"], [[[["\"|\""]], ["undef"]]]]],
+  [
+    [
+      [["quantifier"]],
+      ["::="],
+      [[[["\"*\""]], ["undef"]], [[["\"+\""]], ["undef"]]]
+    ]
+  ],
+  [[[["boolean"]], ["~"], [[[[["[01]"]]], ["undef"]]]]],
+  [[[["<bare name>"]], ["~"], ["[\\w]"], ["+"], ["undef"]]],
+  [
+    [
+      [["<bracketed name>"]],
+      ["~"],
+      [[[["\"<\""], [[[["<bracketed name string>"]]]], ["\">\""]], ["undef"]]]
+    ]
+  ],
+  [[[["<bracketed name string>"]], ["~"], ["[\\s\\w]"], ["+"], ["undef"]]],
+  [
+    [
+      [["<single quoted string>"]],
+      ["~"],
+      [
+        [
+          [
+            [["[\"]"]],
+            [[[["<string without single quote or vertical space>"]]]],
+            [["[\"]"]]
+          ],
+          ["undef"]
+        ]
+      ]
+    ]
+  ],
+  [
+    [
+      [["<string without single quote or vertical space>"]],
+      ["~"],
+      ["[^\"\\x{0A}\\x{0B}\\x{0C}\\x{0D}\\x{0085}\\x{2028}\\x{2029}]"],
+      ["+"],
+      ["undef"]
+    ]
+  ],
+  [
+    [
+      [["<character class>"]],
+      ["~"],
+      [[[["\"[\""], [[[["<cc elements>"]]]], ["\"]\""]], ["undef"]]]
+    ]
+  ],
+  [[[["<cc elements>"]], ["~"], [[["<cc element>"]]], ["+"], ["undef"]]],
+  [[[["<cc element>"]], ["~"], [[[[[[["<safe cc character>"]]]]], ["undef"]]]]],
+  [
+    [
+      [["<safe cc character>"]],
+      ["~"],
+      [
+        [
+          [
+            [
+              [
+                "[^\\x{5d}\\x{0A}\\x{0B}\\x{0C}\\x{0D}\\x{0085}\\x{2028}\\x{2029}]"
+              ]
+            ]
+          ],
+          ["undef"]
+        ]
+      ]
+    ]
+  ]
 ]

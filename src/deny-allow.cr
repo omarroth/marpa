@@ -1,3 +1,5 @@
+require "./lib_marpa"
+
 <<-BNF
 :start        ::= rules
 rules         ::= rule+
@@ -92,9 +94,7 @@ tokens = [
   {"(?<s_mismatch>.)", "s_mismatch"},
 ]
 
-# LEXER
 token_regex = Regex.union(tokens.map { |a, b| /#{a}/ })
-
 token_values = {} of Int32 => String
 
 input.scan(token_regex) do |match|
