@@ -1,0 +1,611 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- This manual (17 February 2018)
+is for the internals of Libmarpa 8.6.0.
+
+Copyright (C) 2015 Jeffrey Kegler.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE. -->
+<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Libmarpa 8.6.0</title>
+
+<meta name="description" content="Libmarpa 8.6.0">
+<meta name="keywords" content="Libmarpa 8.6.0">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<link href="#Top" rel="start" title="Top">
+<link href="#SEC_Contents" rel="contents" title="Table of Contents">
+<link href="dir.html#Top" rel="up" title="(dir)">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
+blockquote.smallquotation {font-size: smaller}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+div.smalldisplay {margin-left: 3.2em}
+div.smallexample {margin-left: 3.2em}
+div.smalllisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+pre.smalldisplay {font-family: inherit; font-size: smaller}
+pre.smallexample {font-size: smaller}
+pre.smallformat {font-family: inherit; font-size: smaller}
+pre.smalllisp {font-size: smaller}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en">
+<h1 class="settitle" align="center">Libmarpa 8.6.0</h1>
+
+
+<a name="SEC_Contents"></a>
+<h2 class="contents-heading">Table of Contents</h2>
+
+<div class="contents">
+
+<ul class="no-bullet">
+  <li><a name="toc-About-this-document-1" href="#About-this-document">1 About this document</a></li>
+  <li><a name="toc-Internal-Interface-1" href="#Internal-Interface">2 Internal Interface</a>
+  <ul class="no-bullet">
+    <li><a name="toc-Symbol-internal-methods-1" href="#Symbol-internal-methods">2.1 Symbol internal methods</a></li>
+    <li><a name="toc-Rule-internals-1" href="#Rule-internals">2.2 Rule internals</a></li>
+    <li><a name="toc-Grammar-internal-methods" href="#Grammar-internals">2.3 Grammar internal methods</a></li>
+    <li><a name="toc-Recognizer-internals-1" href="#Recognizer-internals">2.4 Recognizer internals</a></li>
+    <li><a name="toc-Bocage-internals-1" href="#Bocage-internals">2.5 Bocage internals</a></li>
+    <li><a name="toc-Ordering-internals-1" href="#Ordering-internals">2.6 Ordering internals</a></li>
+    <li><a name="toc-Tree-internals-1" href="#Tree-internals">2.7 Tree internals</a></li>
+    <li><a name="toc-Valuator-internals-1" href="#Valuator-internals">2.8 Valuator internals</a></li>
+    <li><a name="toc-Debugging-methods-1" href="#Debugging-methods">2.9 Debugging methods</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+<a name="Top"></a>
+<a name="Libmarpa-internals"></a>
+<h1 class="top">Libmarpa internals</h1>
+<p>This manual (17 February 2018)
+is for the internals of Libmarpa 8.6.0.
+</p>
+<p>Copyright &copy; 2015 Jeffrey Kegler.
+</p>
+<blockquote>
+<p>Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the &ldquo;Software&rdquo;),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+</p>
+<p>The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+</p>
+<p>THE SOFTWARE IS PROVIDED &ldquo;AS IS&rdquo;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+</p></blockquote>
+
+
+
+<hr>
+<a name="About-this-document"></a>
+<a name="About-this-document-1"></a>
+<h2 class="chapter">1 About this document</h2>
+
+<p>This manual is a tool
+for is those working on the Libmarpa internals.
+Unless you are thoroughly familiar with Libmarpa already,
+it is not of interest to you.
+</p>
+<hr>
+<a name="Internal-Interface"></a>
+<a name="Internal-Interface-1"></a>
+<h2 class="chapter">2 Internal Interface</h2>
+
+<p>Internal methods are only for testing and development of libmarpa.
+They are listed here (and sometimes described) for the convenience
+of those working on libmarpa&rsquo;s internals.
+</p>
+<p>Internal methods are subject to change.
+Applications should not use internal methods.
+If a description exists and might be helpful,
+it may be included below,
+but all applications
+should treat these methods as &ldquo;undocumented&rdquo;.
+</p>
+
+<hr>
+<a name="Symbol-internal-methods"></a>
+<a name="Symbol-internal-methods-1"></a>
+<h3 class="section">2.1 Symbol internal methods</h3>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005fis_005fstart"></a>Function: <em>int</em> <strong>_marpa_g_nsy_is_start</strong> <em>( Marpa_Grammar <var>g</var>,     Marpa_NSY_ID <var>nsy_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005fis_005fnulling"></a>Function: <em>int</em> <strong>_marpa_g_nsy_is_nulling</strong> <em>(   Marpa_Grammar <var>g</var>,   Marpa_NSY_ID <var>nsy_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005fis_005flhs"></a>Function: <em>int</em> <strong>_marpa_g_nsy_is_lhs</strong> <em>(   Marpa_Grammar <var>g</var>,   Marpa_NSY_ID <var>nsy_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fxsy_005fnulling_005fnsy"></a>Function: <em>Marpa_NSY_ID</em> <strong>_marpa_g_xsy_nulling_nsy</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_Symbol_ID <var>symid</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fxsy_005fnsy"></a>Function: <em>Marpa_NSY_ID</em> <strong>_marpa_g_xsy_nsy</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_Symbol_ID <var>symid</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005fis_005fsemantic"></a>Function: <em>int</em> <strong>_marpa_g_nsy_is_semantic</strong> <em>(   Marpa_Grammar <var>g</var>,   Marpa_NSY_ID <var>nsy_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fsource_005fxsy"></a>Function: <em>Marpa_Rule_ID</em> <strong>_marpa_g_source_xsy</strong> <em>(   Marpa_Grammar <var>g</var>,   Marpa_NSY_ID <var>nsy_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005flhs_005fxrl"></a>Function: <em>Marpa_Rule_ID</em> <strong>_marpa_g_nsy_lhs_xrl</strong> <em>(   Marpa_Grammar <var>g</var>,   Marpa_NSY_ID <var>nsy_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005fxrl_005foffset"></a>Function: <em>int</em> <strong>_marpa_g_nsy_xrl_offset</strong> <em>(   Marpa_Grammar <var>g</var>,   Marpa_NSY_ID <var>nsy_id</var> )</em></dt>
+</dl>
+
+<hr>
+<a name="Rule-internals"></a>
+<a name="Rule-internals-1"></a>
+<h3 class="section">2.2 Rule internals</h3>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005frule_005fis_005fkeep_005fseparation"></a>Function: <em>int</em> <strong>_marpa_g_rule_is_keep_separation</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_Rule_ID <var>rule_id</var>)</em></dt>
+<dd><p>This function does nothing but return an undocumented flag.
+At some point,
+I may optimize cases where separators are discarded,
+in which case this flag will be used.
+I may also remove this call entirely.
+Return value:
+Returns 1 if
+the keep separation flag is set,
+0 if not.
+Returns 0 if
+<var>rule_id</var> is not a sequence rule.
+On failure, returns -2.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005fcount"></a>Function: <em>int</em> <strong>_marpa_g_nsy_count</strong> <em>(   Marpa_Grammar <var>g</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005fcount"></a>Function: <em>int</em> <strong>_marpa_g_irl_count</strong> <em>(   Marpa_Grammar <var>g</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005flhs"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_g_irl_lhs</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+<dd><p>Return value: On success, the LHS symbol of the IRL.
+On failure, -2.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005flength"></a>Function: <em>int</em> <strong>_marpa_g_irl_length</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+<dd><p>The length of a IRL is the number of symbols on its RHS.
+</p>
+<p>Return value: On success, the IRL length.
+On failure, -2.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005frhs"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_g_irl_rhs</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>,     int <var>ix</var>)</em></dt>
+<dd><p>The position in the IRL, <var>ix</var>, is zero-based.
+If <var>ix</var> is greater than or equal the length of the
+IRL, it is a soft failure.
+This can be used in loops, to avoid having to determine
+the IRL&rsquo;s length explicitly.
+</p>
+<p>Return value: On success, the symbol in position <var>ix</var>
+on the IRL&rsquo;s RHS.
+If <var>ix</var> is greater than or equal to the length of
+the IRL, -1.
+On other failures, -2.
+</p></dd></dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005frule_005fis_005fused"></a>Function: <em>int</em> <strong>_marpa_g_rule_is_used</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_Rule_ID <var>rule_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005fis_005fvirtual_005flhs"></a>Function: <em>int</em> <strong>_marpa_g_irl_is_virtual_lhs</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005fis_005fvirtual_005frhs"></a>Function: <em>int</em> <strong>_marpa_g_irl_is_virtual_rhs</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fvirtual_005fstart"></a>Function: <em><code>int</code></em> <strong>_marpa_g_virtual_start</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fvirtual_005fend"></a>Function: <em><code>int</code></em> <strong>_marpa_g_virtual_end</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fsource_005fxrl"></a>Function: <em>Marpa_Rule_ID</em> <strong>_marpa_g_source_xrl</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005freal_005fsymbol_005fcount"></a>Function: <em>int</em> <strong>_marpa_g_real_symbol_count</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005fsemantic_005fequivalent"></a>Function: <em>Marpa_Rule_ID</em> <strong>_marpa_g_irl_semantic_equivalent</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005firl_005frank"></a>Function: <em>Marpa_Rank</em> <strong>_marpa_g_irl_rank</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>irl_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fnsy_005frank"></a>Function: <em>Marpa_Rank</em> <strong>_marpa_g_nsy_rank</strong> <em>(     Marpa_Grammar <var>g</var>,     Marpa_IRL_ID <var>nsy_id</var>)</em></dt>
+</dl>
+
+<hr>
+<a name="Grammar-internals"></a>
+<a name="Grammar-internal-methods"></a>
+<h3 class="section">2.3 Grammar internal methods</h3>
+
+<p>The methods in this section are accessors for Libmarpa&rsquo;s AHMs.
+Their use requires familiarity with
+Marpa&rsquo;s internals, as described in
+<cite>Marpa: The Program</cite>.
+</p>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fahm_005fcount"></a>Function: <em>int</em> <strong>_marpa_g_ahm_count</strong> <em>(Marpa_Grammar <var>g</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fahm_005firl"></a>Function: <em>Marpa_Rule_ID</em> <strong>_marpa_g_ahm_irl</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_AHM_ID <var>item_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fahm_005fposition"></a>Function: <em>int</em> <strong>_marpa_g_ahm_position</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_AHM_ID <var>item_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fg_005fahm_005fpostdot"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_g_ahm_postdot</strong> <em>(Marpa_Grammar <var>g</var>,     Marpa_AHM_ID <var>item_id</var>)</em></dt>
+</dl>
+
+<hr>
+<a name="Recognizer-internals"></a>
+<a name="Recognizer-internals-1"></a>
+<h3 class="section">2.4 Recognizer internals</h3>
+
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fis_005fuse_005fleo"></a>Function: <em>int</em> <strong>_marpa_r_is_use_leo</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+<dt><a name="index-_005fmarpa_005fr_005fis_005fuse_005fleo_005fset"></a>Function: <em>int</em> <strong>_marpa_r_is_use_leo_set</strong> <em>( Marpa_Recognizer <var>r</var>,     int <var>value</var>)</em></dt>
+<dd><p>Reports and sets, respectively, the &ldquo;use Leo&rdquo; flag.
+This flag controls whether Joop Leo&rsquo;s method for fast parsing
+of right recursion is used.
+By default, this value is 1 and Leo parsing is in use.
+This default should be used except for testing, debugging
+and development.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005ftrace_005fearley_005fset"></a>Function: <em>Marpa_Earley_Set_ID</em> <strong>_marpa_r_trace_earley_set</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fearley_005fset_005fsize"></a>Function: <em>int</em> <strong>_marpa_r_earley_set_size</strong> <em>(Marpa_Recognizer r, Marpa_Earley_Set_ID <var>set_id</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fearley_005fset_005ftrace"></a>Function: <em>Marpa_Earleme</em> <strong>_marpa_r_earley_set_trace</strong> <em>(Marpa_Recognizer r, Marpa_Earley_Set_ID <var>set_id</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fearley_005fitem_005ftrace"></a>Function: <em>Marpa_AHM_ID</em> <strong>_marpa_r_earley_item_trace</strong> <em>(Marpa_Recognizer r, Marpa_Earley_Item_ID <var>item_id</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fearley_005fitem_005forigin"></a>Function: <em>Marpa_Earley_Set_ID</em> <strong>_marpa_r_earley_item_origin</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fleo_005fpredecessor_005fsymbol"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_leo_predecessor_symbol</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fleo_005fbase_005forigin"></a>Function: <em>Marpa_Earley_Set_ID</em> <strong>_marpa_r_leo_base_origin</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fleo_005fbase_005fstate"></a>Function: <em>Marpa_AHM_ID</em> <strong>_marpa_r_leo_base_state</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fpostdot_005fsymbol_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_postdot_symbol_trace</strong> <em>(Marpa_Recognizer r, Marpa_Symbol_ID <var>symid</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005ffirst_005fpostdot_005fitem_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_first_postdot_item_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fnext_005fpostdot_005fitem_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_next_postdot_item_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fpostdot_005fitem_005fsymbol"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_postdot_item_symbol</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005ffirst_005ftoken_005flink_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_first_token_link_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fnext_005ftoken_005flink_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_next_token_link_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005ffirst_005fcompletion_005flink_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_first_completion_link_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fnext_005fcompletion_005flink_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_next_completion_link_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005ffirst_005fleo_005flink_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_first_leo_link_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fnext_005fleo_005flink_005ftrace"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_next_leo_link_trace</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fsource_005fpredecessor_005fstate"></a>Function: <em>Marpa_AHM_ID</em> <strong>_marpa_r_source_predecessor_state</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fsource_005ftoken"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_source_token</strong> <em>(Marpa_Recognizer r, int *<var>value_p</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fsource_005fleo_005ftransition_005fsymbol"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_r_source_leo_transition_symbol</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fr_005fsource_005fmiddle"></a>Function: <em>Marpa_Earley_Set_ID</em> <strong>_marpa_r_source_middle</strong> <em>(Marpa_Recognizer <var>r</var>)</em></dt>
+</dl>
+
+<hr>
+<a name="Bocage-internals"></a>
+<a name="Bocage-internals-1"></a>
+<h3 class="section">2.5 Bocage internals</h3>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005fand_005fnode_005fcount"></a>Function: <em>int</em> <strong>_marpa_b_and_node_count</strong> <em>(     Marpa_Bocage <var>b</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005fand_005fnode_005fmiddle"></a>Function: <em>Marpa_Earley_Set_ID</em> <strong>_marpa_b_and_node_middle</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_And_Node_ID <var>and_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005fand_005fnode_005fparent"></a>Function: <em>int</em> <strong>_marpa_b_and_node_parent</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_And_Node_ID <var>and_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005fand_005fnode_005fpredecessor"></a>Function: <em>int</em> <strong>_marpa_b_and_node_predecessor</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_And_Node_ID <var>and_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005fand_005fnode_005fcause"></a>Function: <em>int</em> <strong>_marpa_b_and_node_cause</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_And_Node_ID <var>and_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005fand_005fnode_005fsymbol"></a>Function: <em>int</em> <strong>_marpa_b_and_node_symbol</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_And_Node_ID <var>and_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005fand_005fnode_005ftoken"></a>Function: <em>Marpa_Symbol_ID</em> <strong>_marpa_b_and_node_token</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_And_Node_ID <var>and_node_id</var>,     int* <var>value_p</var>)</em></dt>
+<dd>
+<p>Returns the data for the token of the and-node.
+The symbol id is the return value,
+and the token value is placed
+in the location pointed
+to by <var>value_p</var>, if that is non-null.
+If <var>and_node_id</var> is not the ID of an and-node
+whose cause is a token,
+returns -1,
+without changing <var>value_p</var>.
+On failure, returns -2 without changing
+<var>value_p</var>.
+</p>
+<p>There is no function to simply return the token value &ndash;
+because of the need to indicate errors, it is just as
+easy to return the symbol ID as well.
+</p></dd></dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005ftop_005for_005fnode"></a>Function: <em>Marpa_Or_Node_ID</em> <strong>_marpa_b_top_or_node</strong> <em>(     Marpa_Bocage <var>b</var>)</em></dt>
+<dd>
+<p>Return the ID of the top or-node.
+</p></dd></dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005fset"></a>Function: <em>int</em> <strong>_marpa_b_or_node_set</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+<dd>
+<p>Return the ordinal of the current (final) Earley set of
+the or-node.
+</p></dd></dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005forigin"></a>Function: <em>int</em> <strong>_marpa_b_or_node_origin</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005firl"></a>Function: <em>Marpa_IRL_ID</em> <strong>_marpa_b_or_node_irl</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005fposition"></a>Function: <em>int</em> <strong>_marpa_b_or_node_position</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005fis_005fwhole"></a>Function: <em>int</em> <strong>_marpa_b_or_node_is_whole</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005fis_005fsemantic"></a>Function: <em>int</em> <strong>_marpa_b_or_node_is_semantic</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005ffirst_005fand"></a>Function: <em>int</em> <strong>_marpa_b_or_node_first_and</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005flast_005fand"></a>Function: <em>int</em> <strong>_marpa_b_or_node_last_and</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+<dl>
+<dt><a name="index-_005fmarpa_005fb_005for_005fnode_005fand_005fcount"></a>Function: <em>int</em> <strong>_marpa_b_or_node_and_count</strong> <em>(     Marpa_Bocage <var>b</var>,     Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+
+<hr>
+<a name="Ordering-internals"></a>
+<a name="Ordering-internals-1"></a>
+<h3 class="section">2.6 Ordering internals</h3>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fo_005fand_005forder_005fget"></a>Function: <em>Marpa_And_Node_ID</em> <strong>_marpa_o_and_order_get</strong> <em>(     Marpa_Order <var>o</var>,     Marpa_Or_Node_ID <var>or_node_id</var>,     int <var>ix</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fo_005for_005fnode_005fand_005fnode_005fcount"></a>Function: <em>int</em> <strong>_marpa_o_or_node_and_node_count</strong> <em>(   Marpa_Order <var>o</var>,   Marpa_Or_Node_ID <var>or_node_id</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fo_005for_005fnode_005fand_005fnode_005fid_005fby_005fix"></a>Function: <em>int</em> <strong>_marpa_o_or_node_and_node_id_by_ix</strong> <em>(   Marpa_Order <var>o</var>,   Marpa_Or_Node_ID <var>or_node_id</var>,   int <var>ix</var>)</em></dt>
+</dl>
+
+<hr>
+<a name="Tree-internals"></a>
+<a name="Tree-internals-1"></a>
+<h3 class="section">2.7 Tree internals</h3>
+
+<p>In Marpa, a nook is any node of a parse tree.
+The usual term is &quot;node&quot;,
+but within Marpa,
+the word &quot;node&quot; is already heavily overloaded.
+So what most texts call &quot;tree nodes&quot; are here
+called &quot;nooks&quot;.
+&quot;Nook&quot; can be thought of as a pun on both
+&quot;node&quot; and &quot;fork&quot;.
+</p>
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fsize"></a>Function: <em>int</em> <strong>_marpa_t_size</strong> <em>(         Marpa_Tree <var>t</var>)</em></dt>
+<dd><p>Return the size of the parse tree.
+This is the number of nooks in its stack.
+If there is a serious error,
+or if the tree is uninitialized, return -2.
+If the tree is exhausted, return -1.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fnook_005for_005fnode"></a>Function: <em>Marpa_Or_Node_ID</em> <strong>_marpa_t_nook_or_node</strong> <em>(     Marpa_Tree <var>t</var>,     Marpa_Nook_ID <var>nook_id</var>)</em></dt>
+<dd>
+<p>Return the ID of the or-node for <var>nook_id</var>.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fnook_005fchoice"></a>Function: <em>int</em> <strong>_marpa_t_nook_choice</strong> <em>(         Marpa_Tree <var>t</var>,         Marpa_Nook_ID <var>nook_id</var>         )</em></dt>
+<dd>
+<p>Return the current choice for <var>nook_id</var>.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fnook_005fparent"></a>Function: <em>int</em> <strong>_marpa_t_nook_parent</strong> <em>(         Marpa_Tree <var>t</var>,         Marpa_Nook_ID <var>nook_id</var>         )</em></dt>
+<dd>
+<p>Return the parent nook&rsquo;s ID for <var>nook_id</var>.
+As with the other nook trace functions,
+-1 is returned if <var>nook_id</var> is not the ID of
+a nook on the stack,
+but -1 can also be a valid value.
+If that&rsquo;s an issue, the <var>nook_id</var> needs
+to be checked with one of the trace functions
+where -1 is never a valid value &mdash;
+for example, <code>_marpa_t_nook_or_node</code>.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fnook_005fcause_005fis_005fready"></a>Function: <em>int</em> <strong>_marpa_t_nook_cause_is_ready</strong> <em>(         Marpa_Tree <var>t</var>,         Marpa_Nook_ID <var>nook_id</var>         )</em></dt>
+<dd>
+<p>Return the cause-is-ready bit for <var>nook_id</var>.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fnook_005fpredecessor_005fis_005fready"></a>Function: <em>int</em> <strong>_marpa_t_nook_predecessor_is_ready</strong> <em>(         Marpa_Tree <var>t</var>,         Marpa_Nook_ID <var>nook_id</var>         )</em></dt>
+<dd>
+<p>Return the predecessor-is-ready bit for <var>nook_id</var>.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fnook_005fis_005fcause"></a>Function: <em>int</em> <strong>_marpa_t_nook_is_cause</strong> <em>(         Marpa_Tree <var>t</var>,         Marpa_Nook_ID <var>nook_id</var>         )</em></dt>
+<dd>
+<p>Return the is-cause bit for <var>nook_id</var>.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005ft_005fnook_005fis_005fpredecessor"></a>Function: <em>int</em> <strong>_marpa_t_nook_is_predecessor</strong> <em>(         Marpa_Tree <var>t</var>,         Marpa_Nook_ID <var>nook_id</var>         )</em></dt>
+<dd>
+<p>Return the is-predecessor bit for <var>nook_id</var>.
+</p></dd></dl>
+
+<hr>
+<a name="Valuator-internals"></a>
+<a name="Valuator-internals-1"></a>
+<h3 class="section">2.8 Valuator internals</h3>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fv_005ftrace"></a>Function: <em>int</em> <strong>_marpa_v_trace</strong> <em>(     Marpa_Value <var>v</var>,     int <var>flag</var>)</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-_005fmarpa_005fv_005fnook"></a>Function: <em>Marpa_Nook_ID</em> <strong>_marpa_v_nook</strong> <em>(     Marpa_Value <var>v</var>)</em></dt>
+</dl>
+
+<hr>
+<a name="Debugging-methods"></a>
+<a name="Debugging-methods-1"></a>
+<h3 class="section">2.9 Debugging methods</h3>
+
+<dl>
+<dt><a name="index-char_002a"></a>Function: <em>const</em> <strong>char*</strong> <em>_marpa_tag(void)</em></dt>
+<dd><p>Returns a &ldquo;tag&rdquo; value.
+This is to allow tagging the libraries with an
+completely arbitrary string identifier.
+independent even of the versioning mechanism.
+This allows debugging, for example,
+to determine which of two otherwise exactly
+identical libraries is in use.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-marpa_005fdebug_005flevel_005fset"></a>Function: <em>int</em> <strong>marpa_debug_level_set</strong> <em>( int <var>level</var> )</em></dt>
+</dl>
+
+<dl>
+<dt><a name="index-marpa_005fdebug_005fhandler_005fset"></a>Function: <em>void</em> <strong>marpa_debug_handler_set</strong> <em>( int (*<var>debug_handler</var>)(const char*, ...) )</em></dt>
+</dl>
+
+<hr>
+
+
+
+</body>
+</html>
