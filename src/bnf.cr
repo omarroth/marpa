@@ -1,7 +1,9 @@
 require "./lib_marpa"
+require "json"
 
-input = File.read("src/minimal.ebnf")
-# input = File.read("src/metag.ebnf")
+# input = File.read("src/bnf/metag.ebnf")
+# input = File.read("src/bnf/numbers.ebnf")
+input = File.read("src/bnf/minimal.ebnf")
 
 config = uninitialized LibMarpa::MarpaConfig
 LibMarpa.marpa_c_init(pointerof(config))
@@ -89,97 +91,98 @@ symbol_name[s_symbol_name] = "s_symbol_name"
 
 rhs = [0, 0, 0, 0, 0]
 
+# 0
 rhs[0] = s_start_rule
 LibMarpa.marpa_g_rule_new(g, s_statement, rhs, 1)
-
+# 1
 rhs[0] = s_priority_rule
 LibMarpa.marpa_g_rule_new(g, s_statement, rhs, 1)
-
+# 2
 rhs[0] = s_quantified_rule
 LibMarpa.marpa_g_rule_new(g, s_statement, rhs, 1)
-
+# 3
 rhs[0] = s_discard_rule
 LibMarpa.marpa_g_rule_new(g, s_statement, rhs, 1)
-
+# 4
 rhs[0] = s_symbol_name
 LibMarpa.marpa_g_rule_new(g, s_lhs, rhs, 1)
-
+# 5
 rhs[0] = s_single_symbol
 LibMarpa.marpa_g_rule_new(g, s_rhs_primary, rhs, 1)
-
+# 6
 rhs[0] = s_single_quoted_string
 LibMarpa.marpa_g_rule_new(g, s_rhs_primary, rhs, 1)
-
+# 7
 rhs[0] = s_parenthesized_rhs_primary_list
 LibMarpa.marpa_g_rule_new(g, s_rhs_primary, rhs, 1)
-
+# 8
 rhs[0] = s_separator_specification
 LibMarpa.marpa_g_rule_new(g, s_adverb_item, rhs, 1)
-
+# 9
 rhs[0] = s_proper_specification
 LibMarpa.marpa_g_rule_new(g, s_adverb_item, rhs, 1)
-
+# 10
 rhs[0] = s_symbol
 LibMarpa.marpa_g_rule_new(g, s_single_symbol, rhs, 1)
-
+# 11
 rhs[0] = s_character_class
 LibMarpa.marpa_g_rule_new(g, s_single_symbol, rhs, 1)
-
+# 12
 rhs[0] = s_symbol_name
 LibMarpa.marpa_g_rule_new(g, s_symbol, rhs, 1)
-
+# 13
 rhs[0] = s_bare_name
 LibMarpa.marpa_g_rule_new(g, s_symbol_name, rhs, 1)
-
+# 14
 rhs[0] = s_bracketed_name
 LibMarpa.marpa_g_rule_new(g, s_symbol_name, rhs, 1)
-
+# 15
 rhs[0] = s_op_declare_bnf
 LibMarpa.marpa_g_rule_new(g, s_op_declare, rhs, 1)
-
+# 16
 rhs[0] = s_op_declare_match
 LibMarpa.marpa_g_rule_new(g, s_op_declare, rhs, 1)
-
+# 17
 rhs[0] = s_op_declare_bnf
 LibMarpa.marpa_g_rule_new(g, s_op_declare, rhs, 1)
-
+# 18
 rhs[0] = s_op_declare_match
 LibMarpa.marpa_g_rule_new(g, s_op_declare, rhs, 1)
-
+# 19
 rhs[0] = s_rhs
 rhs[1] = s_adverb_list
 LibMarpa.marpa_g_rule_new(g, s_alternative, rhs, 2)
-
+# 20
 rhs[0] = s_start_colon
 rhs[1] = s_op_declare_bnf
 rhs[2] = s_symbol
 LibMarpa.marpa_g_rule_new(g, s_start_rule, rhs, 3)
-
+# 21
 rhs[0] = s_lhs
 rhs[1] = s_op_declare
 rhs[2] = s_alternatives
 LibMarpa.marpa_g_rule_new(g, s_priority_rule, rhs, 3)
-
+# 22
 rhs[0] = s_discard_colon
 rhs[1] = s_op_declare_match
 rhs[2] = s_single_symbol
 LibMarpa.marpa_g_rule_new(g, s_discard_rule, rhs, 3)
-
+# 23
 rhs[0] = s_separator_string
 rhs[1] = s_arrow
 rhs[2] = s_single_symbol
 LibMarpa.marpa_g_rule_new(g, s_separator_specification, rhs, 3)
-
+# 24
 rhs[0] = s_proper_string
 rhs[1] = s_arrow
 rhs[2] = s_boolean
 LibMarpa.marpa_g_rule_new(g, s_proper_specification, rhs, 3)
-
+# 25
 rhs[0] = s_left_parenthesis
 rhs[1] = s_rhs_primary_list
 rhs[2] = s_right_parenthesis
 LibMarpa.marpa_g_rule_new(g, s_parenthesized_rhs_primary_list, rhs, 3)
-
+# 26
 rhs[0] = s_lhs
 rhs[1] = s_op_declare
 rhs[2] = s_single_symbol
@@ -187,10 +190,15 @@ rhs[3] = s_quantifier
 rhs[4] = s_adverb_list
 LibMarpa.marpa_g_rule_new(g, s_quantified_rule, rhs, 5)
 
+# 27
 LibMarpa.marpa_g_sequence_new(g, s_adverb_list, s_adverb_item, -1, 0, LibMarpa::MARPA_PROPER_SEPARATION)
+# 28
 LibMarpa.marpa_g_sequence_new(g, s_alternatives, s_alternative, s_op_equal_priority, 1, LibMarpa::MARPA_PROPER_SEPARATION)
+# 29
 LibMarpa.marpa_g_sequence_new(g, s_rhs, s_rhs_primary, -1, 1, LibMarpa::MARPA_PROPER_SEPARATION)
+# 30
 LibMarpa.marpa_g_sequence_new(g, s_rhs_primary_list, s_rhs_primary, -1, 1, LibMarpa::MARPA_PROPER_SEPARATION)
+# 31
 LibMarpa.marpa_g_sequence_new(g, s_statements, s_statement, -1, 1, LibMarpa::MARPA_PROPER_SEPARATION)
 
 LibMarpa.marpa_g_start_symbol_set(g, s_statements)
@@ -295,6 +303,8 @@ end
 alias RecArray = String | Array(RecArray)
 stack = [] of RecArray
 
+spacing = token_values.to_a.sort_by { |a, b| b.size }[-1][1].size + 1
+
 loop do
   step_type = LibMarpa.marpa_v_step(value)
 
@@ -304,6 +314,10 @@ loop do
     raise "Event returned #{e}"
   when LibMarpa::MarpaStepType::MARPA_STEP_RULE
     rule = value.value
+
+    #    if rule.t_rule_id < 4
+    #      print " "*spacing, rule, "\n"
+    #    end
 
     start = rule.t_arg_0
     stop = rule.t_arg_n
@@ -318,6 +332,10 @@ loop do
   when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
     token = value.value
     token_value = token_values[token.t_token_value - 1]
+
+    # print token_values[token.t_token_value - 1].ljust(spacing), token, "\n"
+    # print token_value, "\n"
+
     stack << token_value
   when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
     #
@@ -328,5 +346,33 @@ loop do
   end
 end
 
-stack = stack[0]
+def rec_delete(stack, character)
+  if stack.is_a?(Array)
+    stack.each do |item|
+      stack.delete(character)
+      rec_delete(item, character)
+    end
+  end
+end
+
+def reduce(item)
+  if item.is_a?(Array)
+    if item.size == 1
+      return reduce(item[0])
+    else
+      return item.map! { |x| reduce(x) }
+    end
+  else
+    return item
+  end
+end
+
+rec_delete(stack, "(")
+rec_delete(stack, ")")
+rec_delete(stack, "|")
+rec_delete(stack, "=>")
+
+stack = reduce(stack)
+
+File.write("src/bnf.json", stack)
 pp stack
