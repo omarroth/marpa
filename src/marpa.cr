@@ -1,3 +1,5 @@
 require "./lib_marpa"
 
-puts "run each individually"
+# require "./bnf"
+# require "./bnf_new"
+require "./parse_bnf"
