@@ -32,7 +32,7 @@ rhs ::= <rhs primary>+
   | <single quoted string> 
   | <parenthesized rhs primary list>
 <parenthesized rhs primary list> ::= ('(') <rhs list> (')')
-<rhs list> ::= rhs+
+<rhs list> ::= <rhs primary>+
 <single symbol> ::= symbol
   | <character class>
 symbol ::= <symbol name>
@@ -57,9 +57,7 @@ boolean ~ [01]
 <string without single quote> ~ [^'\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
 
 <character class> ~ '[' <cc elements> ']' 
-<cc elements> ~ <cc element>+
-<cc element> ~ <safe cc character>
-<safe cc character> ~ [^\x5d\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]
+<cc elements> ~ [^\x5d\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
 INPUT
 
 my $g = Marpa::R2::Scanless::G->new(
@@ -73,4 +71,5 @@ my $re = Marpa::R2::Scanless::R->new({ grammar => $g });
 
 $re->read(\$input);
 my $value = ${$re->value};
+
 # print Dumper($value);

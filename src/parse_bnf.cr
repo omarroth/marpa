@@ -10,7 +10,7 @@ LibMarpa.marpa_c_init(pointerof(configuration))
 grammar = LibMarpa.marpa_g_new(pointerof(configuration))
 LibMarpa.marpa_g_force_valued(grammar)
 
-g, value, values, types = parse_bnf(input)
+g, value, token_values, symbol_names = parse_bnf(input)
 
 alias RecArray = String | Array(RecArray)
 
@@ -18,6 +18,10 @@ stack = [] of RecArray
 symbols = {} of Int32 => String
 tokens = {} of String => String
 discard = [] of String
+l0 = [] of {String, String}
+g1 = [] of {String, String}
+
+# puts types
 
 loop do
   step_type = LibMarpa.marpa_v_step(value)
@@ -38,228 +42,82 @@ loop do
     stack.delete_at(start..stop)
 
     case rule.t_rule_id
-    when 0 # start_rule => statement -- DONE?
+    when 0 # statement+ => statements
+      stack = context
+      break
+    when 1 # s_start_rule => statement
       context = context[0]
-    when 1 # priority_rule => statement -- DONE?
+    when 2 # s_priority_rule => statement
       context = context[0]
-    when 2 # quantified_rule => statement -- DONE?
+    when 3 # s_quantified_rule => statement
       context = context[0]
-    when 3 # discard_rule => statement -- DONE?
+    when 4 # s_discard_rule => statement
       context = context[0]
-    when 4 # symbol_name => lhs -- DONE
+    when 5 # s_start_colon, s_op_declare_bnf, s_symbol => s_start_rule
+    when 6 # s_lhs, s_op_declare, s_alternatives => s_priority_rule
+    when 7 # s_lhs, s_op_declare, s_single_symbol, s_quantifier, s_adverb_list => s_quantified_rule
+      puts context
+    when 8 # s_discard_colon, s_op_declare_match, s_single_symbol => s_discard_rule
+      discard << context[2].as(String)
+    when 9 # s_op_declare_bnf => s_op_declare
       context = context[0]
-    when 5 # single_symbol => rhs_primary -- DONE
+    when 10 # s_op_declare_match => s_op_declare -- DONE
       context = context[0]
-    when 6 # single_quoted_string => rhs_primary -- DONE
-      single_quoted_string = context[0].as(String)
-      single_quoted_string = single_quoted_string[1..-2]
-      single_quoted_string = Regex.escape(single_quoted_string)
-
-      if tokens[single_quoted_string]?
-        literal = tokens[single_quoted_string]
-      else
-        id = LibMarpa.marpa_g_symbol_new(grammar)
-        literal = "__literal_" + id.to_s
-
-        symbols[id] = literal
-        tokens[single_quoted_string] = literal
-      end
-
-      context = literal
-    when 7 # parenthesized_rhs_primary_list => rhs_primary -- DONE
+    when 11 # s_rhs+ '|' => s_alternatives
+      context.delete("|")
+    when 12 # s_separator_specification => s_adverb_item
       context = context[0]
-    when 8 # separator_spec => adverb_item -- DONE
+    when 13 # s_proper_specification => s_adverb_item
       context = context[0]
-    when 9 # proper_spec => adverb_item -- DONE
-      context = context[0]
-    when 10 # symbol => single_symbol -- DONE
-      context = context[0]
-    when 11 # character_class => single_symbol -- DONE
-      character_class = context[0].as(String)
-
-      if tokens[character_class]?
-        literal = tokens[character_class]
-      else
-        id = LibMarpa.marpa_g_symbol_new(grammar)
-        literal = "__literal_" + id.to_s
-
-        symbols[id] = literal
-        tokens[character_class] = literal
-      end
-
-      context = literal
-    when 12 # symbol_name => symbol -- DONE
-      context = context[0]
-    when 13 # bare_name => symbol_name -- DONE
-      symbol_name = context[0].as(String)
-      symbol_name = "__" + symbol_name
-
-      if !symbols.key?(symbol_name)
-        id = LibMarpa.marpa_g_symbol_new(grammar)
-        symbols[id] = symbol_name
-      end
-
-      context = symbol_name
-    when 14 # bracketed_name => symbol_name -- DONE
-      symbol_name = context[0].as(String)
-      symbol_name = symbol_name[1..-2]
-      symbol_name = symbol_name.gsub(" ", "_")
-      symbol_name = "__" + symbol_name
-
-      if !symbols.key?(symbol_name)
-        id = LibMarpa.marpa_g_symbol_new(grammar)
-        symbols[id] = symbol_name
-      end
-
-      context = symbol_name
-    when 15 # op_declare_bnf => op_declare -- DONE
-      context = context[0]
-    when 16 # op_declare_match => op_declare -- DONE
-      context = context[0]
-    when 17 # start_colon, op_declare_bnf, symbol => start_rule -- DONE
-      symbol = context[2].as(String)
-      LibMarpa.marpa_g_start_symbol_set(grammar, symbols.key(symbol))
-    when 18 # lhs, op_declare, alternatives => priority_rule
-      lhs = context[0].as(String)
-      op_declare = context[1].as(String)
-      alternatives = context[2].as(Array)
-
-      alternatives.each do |alternative|
-        alternative = alternative.as(Array)
-        alternative = alternative.flatten
-
-        rhs = [] of Int32
-
-        alternative.each do |rhs_symbol|
-          rhs << symbols.key(rhs_symbol)
-        end
-
-        LibMarpa.marpa_g_rule_new(grammar, symbols.key(lhs), rhs, rhs.size)
-      end
-    when 19 # discard_colon, op_declare_match, single_symbol => discard_rule -- DONE
-      single_symbol = context[2].as(String)
-      discard << single_symbol
-    when 20 # separator_string, arrow, single_symbol => separator_spec -- DONE
+    when 14 # s_adverb_item* => s_adverb_list
+    when 15 # s_separator_string, s_arrow, s_single_symbol => s_separator_specification
       context.delete_at(1)
-    when 21 # proper_string, arrow, boolean, proper_spec -- DONE
+    when 16 # s_proper_string, s_arrow, s_boolean => s_proper_specification
       context.delete_at(1)
-    when 22 # left_paren, rhs_primary_list, right_paren => parenthesized_rhs_primary_list -- DONE
+    when 17 # s_symbol_name => s_lhs -- DONE
+      context = context[0]
+    when 18 # s_rhs_primary+ => s_rhs
+      if context.size == 1
+        context = context[0]
+      end
+    when 19 # s_single_symbol => s_rhs_primary -- DONE
+      context = context[0]
+    when 20 # s_single_quoted_string => s_rhs_primary -- DONE
+      context = context[0]
+    when 21 # s_parenthesized_rhs_primary_list => s_rhs_primary -- DONE
+      context = context[0]
+    when 22 # s_left_parenthesis, s_rhs_list, s_right_parenthesis => s_parenthesized_rhs_primary_list -- DONE
       context = context[1]
-    when 23 # lhs, op_declare, single_symbol, quantifier, adverb_list => quantified_rule -- DONE
-      lhs = context[0].as(String)
-      op_declare = context[1].as(String)
-      single_symbol = context[2].as(String)
-      quantifier = context[3].as(String)
-
-      adverb_list = [] of RecArray
-      if context[4]?
-        adverb_list = context[4].as(Array(RecArray))
-      end
-
-      separator = -1
-      proper = LibMarpa::MARPA_PROPER_SEPARATION
-      adverb_list.each do |item|
-        if item[0] == "proper"
-          if item[1] == "0"
-            proper = LibMarpa::MARPA_KEEP_SEPARATION
-          end
-        elsif item[0] == "separator"
-          separator = symbols.key(item[1])
-        end
-      end
-
-      if op_declare == "~"
-        tokens[single_symbol + quantifier] = lhs
-      else
-        if quantifier == "*"
-          quantifier = 0
-        else
-          quantifier = 1
-        end
-
-        # if discard.includes?(lhs)
-        #   discard << single_symbol
-        # end
-        LibMarpa.marpa_g_sequence_new(grammar, symbols.key(lhs), symbols.key(single_symbol), separator, quantifier, proper)
-      end
-    when 24 # adverb_item* => adverb_list -- DONE
-    when 25 # rhs+ => alternatives, separator => "|" -- DONE?
-      rhs = context.as(Array)
-      rhs.delete("|")
-      context = rhs
-    when 26 # rhs_primary+ => rhs -- DONE?
-    when 27 # rhs_primary+ => rhs_primary_list -- DONE?
-    when 28 # statement+ => statements -- DONE
+    when 23 # s_rhs_primary+ => s_rhs_list
+    when 24 # s_symbol => s_single_symbol
+      context = context[0]
+    when 25 # s_character_class => s_single_symbol
+      context = context[0]
+    when 26 # s_symbol_name => s_symbol
+      context = context[0]
+    when 27 # s_bare_name => s_symbol_name
+      context = context[0]
+    when 28 # s_bracketed_name => s_symbol_name
+      context = context[0]
+    when 29 # s_asterisk => s_quantifier
+      context = context[0]
+    when 30 # s_plus => s_quantifier
+      context = context[0]
     end
 
     stack << context
   when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
     token = value.value
 
-    token_value = values[token.t_token_value - 1]
+    token_value = token_values[token.t_token_value - 1]
 
     stack << token_value
   when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
+    symbol = value.value
   when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
     break
   when LibMarpa::MarpaStepType::MARPA_STEP_INITIAL
   end
 end
 
-LibMarpa.marpa_g_precompute(grammar)
-
-recce = LibMarpa.marpa_r_new(grammar)
-LibMarpa.marpa_r_start_input(recce)
-
-tokens["."] = "__mismatch"
-token_regex = Regex.union(tokens.map { |value, name| /(?<#{name}>#{value})/ })
-
-token_values = {} of Int32 => String
-
-input.scan(token_regex) do |match|
-  position = match.begin || 0
-  symbol = match.to_h.compact.to_a[1][0]
-  value = match.to_h.compact.to_a[1][1]
-
-  # col = input[0..position][/.+$/].size + 1
-  # col = input[0..position][/.+/].size
-  # puts col
-  # puts position
-  # col = input[0..position][-1, '\n'].size
-  col = 1
-  row = input[0..position].count("\n") + 1
-  # puts row
-
-  if discard.includes?(symbol)
-  elsif symbol == "mismatch"
-    raise "Lexing error at #{row}, #{col}"
-  else
-    status = LibMarpa.marpa_r_alternative(recce, symbols.key(symbol), position + 1, 1)
-
-    if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-      buffer = uninitialized Int32[128]
-      size = LibMarpa.marpa_r_terminals_expected(recce, buffer)
-      slice = buffer.to_slice[0, size]
-
-      puts symbol
-      msg = "Unexpected symbol at line #{row}, character #{col}, expected:\n"
-      slice.each do |id|
-        msg += symbols[id] + "\n"
-      end
-
-      raise msg
-    end
-
-    status = LibMarpa.marpa_r_earleme_complete(recce)
-    if status < 0
-      e = LibMarpa.marpa_g_error(grammar, out p_error_string)
-      raise "Earleme complete #{e}"
-    end
-
-    token_values[position] = value
-  end
-end
-
-# pp symbols
-
-# puts discard
+# pp stack.size

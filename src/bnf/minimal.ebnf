@@ -26,7 +26,7 @@ rhs ::= <rhs primary>+
   | <single quoted string> 
   | <parenthesized rhs primary list>
 <parenthesized rhs primary list> ::= ('(') <rhs list> (')')
-<rhs list> ::= rhs+
+<rhs list> ::= <rhs primary>+
 <single symbol> ::= symbol
   | <character class>
 symbol ::= <symbol name>
