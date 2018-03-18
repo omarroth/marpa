@@ -2,6 +2,7 @@
 use strict;
 use Marpa::R2;
 use Data::Dumper;
+use JSON;
 
 my $input = <<'INPUT';
 :start ::= statements
@@ -71,5 +72,6 @@ my $re = Marpa::R2::Scanless::R->new({ grammar => $g });
 
 $re->read(\$input);
 my $value = ${$re->value};
+my $json = JSON->new;
 
-# print Dumper($value);
+print $json->pretty->encode($value);
