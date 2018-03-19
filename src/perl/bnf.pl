@@ -24,8 +24,8 @@ alternatives ::= rhs+
 <adverb item> ::= <separator specification> 
   | <proper specification>
 
-<separator specification> ::= ('separator' '=>') <single symbol>
-<proper specification> ::= ('proper' '=>') boolean
+<separator specification> ::= ('separator =>') <single symbol>
+<proper specification> ::= ('proper =>') boolean
 
 lhs ::= <symbol name>
 rhs ::= <rhs primary>+
