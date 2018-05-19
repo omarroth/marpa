@@ -17,8 +17,8 @@ alternatives ::= rhs+
 <adverb item> ::= <separator specification> 
   | <proper specification>
 
-<separator specification> ::= ('separator =>') <single symbol>
-<proper specification> ::= ('proper =>') boolean
+<separator specification> ::= ('separator' '=>') <single symbol>
+<proper specification> ::= ('proper' '=>') boolean
 
 lhs ::= <symbol name>
 rhs ::= <rhs primary>+
@@ -50,5 +50,5 @@ boolean ~ [01]
 <single quoted string> ~ ['] <string without single quote> [']
 <string without single quote> ~ [^'\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
 
-<character class> ~ '[' <cc elements> ']' 
+<character class> ~ '[' <cc elements> ']'
 <cc elements> ~ [^\x5d\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+

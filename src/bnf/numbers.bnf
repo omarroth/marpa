@@ -1,9 +1,9 @@
-:start        ::= rules
-rules         ::= rule+
+:start ::= rules
+rules ::= rule+
 
-rule          ::= cmd_type user
-                | cmd_type list_ref
-                | user_list
+rule ::= cmd_type user
+    | cmd_type list_ref
+    | user_list
 
 user_list  ::= user '=' users
 users      ::= user+

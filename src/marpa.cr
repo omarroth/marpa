@@ -1,1017 +1,314 @@
+require "./helpers"
 require "./lib_marpa"
-require "./build_marpa"
+require "json"
 
-build_bnf = File.read("src/bnf/minimal.ebnf")
+alias Rule = Hash(String, String | Array(String))
+alias RecArray = Array(RecArray) | {String, String}
 
-build_config = uninitialized LibMarpa::MarpaConfig
-LibMarpa.marpa_c_init(pointerof(build_config))
+def parse_input(rules : Hash(String, Array(Rule)), input : String)
+  meta_config = uninitialized LibMarpa::MarpaConfig
+  LibMarpa.marpa_c_init(pointerof(meta_config))
 
-build_grammar = LibMarpa.marpa_g_new(pointerof(build_config))
-LibMarpa.marpa_g_force_valued(build_grammar)
+  meta_grammar = LibMarpa.marpa_g_new(pointerof(meta_config))
+  LibMarpa.marpa_g_force_valued(meta_grammar)
 
-p_error_string = uninitialized String
+  p_error_string = String.new
 
-s_statements = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_statement = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_start_rule = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_priority_rule = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_quantified_rule = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_discard_rule = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_op_declare = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_alternatives = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_adverb_list = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_adverb_item = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_separator_specification = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_proper_specification = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_lhs = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_rhs = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_rhs_primary = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_parenthesized_rhs_primary_list = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_rhs_list = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_single_symbol = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_symbol = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_symbol_name = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_op_declare_bnf = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_op_declare_match = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_op_equal_priority = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_quantifier = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_boolean = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_bare_name = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_bracketed_name = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_single_quoted_string = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_character_class = LibMarpa.marpa_g_symbol_new(build_grammar)
+  symbols = {} of Int32 => String
 
-symbol_names = {} of Int32 => String
+  (rules["L0"] + rules["G1"]).each do |rule|
+    lhs = rule["lhs"].as(String)
 
-symbol_names[s_statements] = "s_statements"
-symbol_names[s_statement] = "s_statement"
-symbol_names[s_start_rule] = "s_start_rule"
-symbol_names[s_priority_rule] = "s_priority_rule"
-symbol_names[s_quantified_rule] = "s_quantified_rule"
-symbol_names[s_discard_rule] = "s_discard_rule"
-symbol_names[s_op_declare] = "s_op_declare"
-symbol_names[s_alternatives] = "s_alternatives"
-symbol_names[s_adverb_list] = "s_adverb_list"
-symbol_names[s_adverb_item] = "s_adverb_item"
-symbol_names[s_separator_specification] = "s_separator_specification"
-symbol_names[s_proper_specification] = "s_proper_specification"
-symbol_names[s_lhs] = "s_lhs"
-symbol_names[s_rhs] = "s_rhs"
-symbol_names[s_rhs_primary] = "s_rhs_primary"
-symbol_names[s_parenthesized_rhs_primary_list] = "s_parenthesized_rhs_primary_list"
-symbol_names[s_rhs_list] = "s_rhs_list"
-symbol_names[s_single_symbol] = "s_single_symbol"
-symbol_names[s_symbol] = "s_symbol"
-symbol_names[s_symbol_name] = "s_symbol_name"
-symbol_names[s_op_declare_bnf] = "s_op_declare_bnf"
-symbol_names[s_op_declare_match] = "s_op_declare_match"
-symbol_names[s_op_equal_priority] = "s_op_equal_priority"
-symbol_names[s_quantifier] = "s_quantifier"
-symbol_names[s_boolean] = "s_boolean"
-symbol_names[s_bare_name] = "s_bare_name"
-symbol_names[s_bracketed_name] = "s_bracketed_name"
-symbol_names[s_single_quoted_string] = "s_single_quoted_string"
-symbol_names[s_character_class] = "s_character_class"
+    if lhs == "[:start]" || lhs == "[:discard]"
+      next
+    end
 
-# TERMINALS
-s_start_colon = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_discard_colon = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_separator_string = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_proper_string = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_arrow = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_left_parenthesis = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_right_parenthesis = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_asterisk = LibMarpa.marpa_g_symbol_new(build_grammar)
-s_plus = LibMarpa.marpa_g_symbol_new(build_grammar)
+    if !symbols.key?(lhs)
+      id = LibMarpa.marpa_g_symbol_new(meta_grammar)
 
-symbol_names[s_start_colon] = "s_start_colon"
-symbol_names[s_discard_colon] = "s_discard_colon"
-symbol_names[s_separator_string] = "s_separator_string"
-symbol_names[s_proper_string] = "s_proper_string"
-symbol_names[s_arrow] = "s_arrow"
-symbol_names[s_left_parenthesis] = "s_left_parenthesis"
-symbol_names[s_right_parenthesis] = "s_right_parenthesis"
-symbol_names[s_asterisk] = "s_asterisk"
-symbol_names[s_plus] = "s_plus"
-# END
-
-rhs = [] of Int32
-
-LibMarpa.marpa_g_sequence_new(build_grammar, s_statements, s_statement, -1, 1, LibMarpa::MARPA_PROPER_SEPARATION)
-
-rhs.clear
-rhs << s_start_rule
-LibMarpa.marpa_g_rule_new(build_grammar, s_statement, rhs, rhs.size)
-
-rhs.clear
-rhs << s_priority_rule
-LibMarpa.marpa_g_rule_new(build_grammar, s_statement, rhs, rhs.size)
-
-rhs.clear
-rhs << s_quantified_rule
-LibMarpa.marpa_g_rule_new(build_grammar, s_statement, rhs, rhs.size)
-
-rhs.clear
-rhs << s_discard_rule
-LibMarpa.marpa_g_rule_new(build_grammar, s_statement, rhs, rhs.size)
-
-rhs.clear
-rhs << s_start_colon
-rhs << s_op_declare_bnf
-rhs << s_symbol
-LibMarpa.marpa_g_rule_new(build_grammar, s_start_rule, rhs, rhs.size)
-
-rhs.clear
-rhs << s_lhs
-rhs << s_op_declare
-rhs << s_alternatives
-LibMarpa.marpa_g_rule_new(build_grammar, s_priority_rule, rhs, rhs.size)
-
-rhs.clear
-rhs << s_lhs
-rhs << s_op_declare
-rhs << s_single_symbol
-rhs << s_quantifier
-rhs << s_adverb_list
-LibMarpa.marpa_g_rule_new(build_grammar, s_quantified_rule, rhs, rhs.size)
-
-rhs.clear
-rhs << s_discard_colon
-rhs << s_op_declare_match
-rhs << s_single_symbol
-LibMarpa.marpa_g_rule_new(build_grammar, s_discard_rule, rhs, rhs.size)
-
-rhs.clear
-rhs << s_op_declare_bnf
-LibMarpa.marpa_g_rule_new(build_grammar, s_op_declare, rhs, rhs.size)
-
-rhs.clear
-rhs << s_op_declare_match
-LibMarpa.marpa_g_rule_new(build_grammar, s_op_declare, rhs, rhs.size)
-
-LibMarpa.marpa_g_sequence_new(build_grammar, s_alternatives, s_rhs, s_op_equal_priority, 1, LibMarpa::MARPA_PROPER_SEPARATION)
-
-rhs.clear
-rhs << s_separator_specification
-LibMarpa.marpa_g_rule_new(build_grammar, s_adverb_item, rhs, rhs.size)
-
-rhs.clear
-rhs << s_proper_specification
-LibMarpa.marpa_g_rule_new(build_grammar, s_adverb_item, rhs, rhs.size)
-
-LibMarpa.marpa_g_sequence_new(build_grammar, s_adverb_list, s_adverb_item, -1, 0, LibMarpa::MARPA_PROPER_SEPARATION)
-
-rhs.clear
-rhs << s_separator_string
-rhs << s_arrow
-rhs << s_single_symbol
-LibMarpa.marpa_g_rule_new(build_grammar, s_separator_specification, rhs, rhs.size)
-
-rhs.clear
-rhs << s_proper_string
-rhs << s_arrow
-rhs << s_boolean
-LibMarpa.marpa_g_rule_new(build_grammar, s_proper_specification, rhs, rhs.size)
-
-rhs.clear
-rhs << s_symbol_name
-LibMarpa.marpa_g_rule_new(build_grammar, s_lhs, rhs, rhs.size)
-
-LibMarpa.marpa_g_sequence_new(build_grammar, s_rhs, s_rhs_primary, -1, 1, LibMarpa::MARPA_PROPER_SEPARATION)
-
-rhs.clear
-rhs << s_single_symbol
-LibMarpa.marpa_g_rule_new(build_grammar, s_rhs_primary, rhs, rhs.size)
-
-rhs.clear
-rhs << s_single_quoted_string
-LibMarpa.marpa_g_rule_new(build_grammar, s_rhs_primary, rhs, rhs.size)
-
-rhs.clear
-rhs << s_parenthesized_rhs_primary_list
-LibMarpa.marpa_g_rule_new(build_grammar, s_rhs_primary, rhs, rhs.size)
-
-rhs.clear
-rhs << s_left_parenthesis
-rhs << s_rhs_list
-rhs << s_right_parenthesis
-LibMarpa.marpa_g_rule_new(build_grammar, s_parenthesized_rhs_primary_list, rhs, rhs.size)
-
-LibMarpa.marpa_g_sequence_new(build_grammar, s_rhs_list, s_rhs_primary, -1, 1, LibMarpa::MARPA_PROPER_SEPARATION)
-
-rhs.clear
-rhs << s_symbol
-LibMarpa.marpa_g_rule_new(build_grammar, s_single_symbol, rhs, rhs.size)
-
-rhs.clear
-rhs << s_character_class
-LibMarpa.marpa_g_rule_new(build_grammar, s_single_symbol, rhs, rhs.size)
-
-rhs.clear
-rhs << s_symbol_name
-LibMarpa.marpa_g_rule_new(build_grammar, s_symbol, rhs, rhs.size)
-
-rhs.clear
-rhs << s_bare_name
-LibMarpa.marpa_g_rule_new(build_grammar, s_symbol_name, rhs, rhs.size)
-
-rhs.clear
-rhs << s_bracketed_name
-LibMarpa.marpa_g_rule_new(build_grammar, s_symbol_name, rhs, rhs.size)
-
-rhs.clear
-rhs << s_asterisk
-LibMarpa.marpa_g_rule_new(build_grammar, s_quantifier, rhs, rhs.size)
-
-rhs.clear
-rhs << s_plus
-LibMarpa.marpa_g_rule_new(build_grammar, s_quantifier, rhs, rhs.size)
-
-LibMarpa.marpa_g_start_symbol_set(build_grammar, s_statements)
-LibMarpa.marpa_g_precompute(build_grammar)
-
-build_recce = LibMarpa.marpa_r_new(build_grammar)
-LibMarpa.marpa_r_start_input(build_recce)
-
-build_tokens = ["(?<s_start_colon>:start)",
-                "(?<s_discard_colon>:discard)",
-                "(?<s_separator_string>separator)",
-                "(?<s_proper_string>proper)",
-                "(?<s_arrow>=>)",
-                "(?<s_left_parenthesis>\\()",
-                "(?<s_right_parenthesis>\\))",
-                "(?<s_op_declare_bnf>::=)",
-                "(?<s_op_declare_match>~)",
-                "(?<s_op_equal_priority>\\|)",
-                "(?<s_asterisk>\\*)",
-                "(?<s_plus>\\+)",
-                "(?<s_boolean>[01])",
-                "(?<s_single_quoted_string>'[^'\x0A\x0B\x0C\x0D\\x{0085}\\x{2028}\\x{2029}]+')",
-                "(?<s_character_class>\\[[^\x5d\x0A\x0B\x0C\x0D\\x{0085}\\x{2028}\\x{2029}]+\\])",
-                "(?<s_bracketed_name><[\\s\\w]+>)",
-                "(?<s_bare_name>[\\w]+)",
-                "(?<s_whitespace>[\\s]+)",
-                "(?<s_mismatch>.)",
-]
-token_regex = Regex.union(build_tokens.map { |a| /#{a}/ })
-
-token_values = {} of Int32 => String
-
-# LEXER
-build_bnf.scan(token_regex) do |match|
-  position = match.begin || 0
-  symbol = match.to_h.compact.to_a[1][0]
-  value = match.to_h.compact.to_a[1][1]
-
-  col = position - (build_bnf[0..position].rindex("\n") || 0) + 1
-  row = build_bnf[0..position].count("\n") + 1
-
-  if symbol == "s_whitespace"
-  elsif symbol == "s_mismatch"
-    raise "Lexing error at #{row}, #{col}"
-  else
-    status = LibMarpa.marpa_r_alternative(build_recce, symbol_names.key(symbol), position + 1, 1)
-
-    if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-      buffer = uninitialized Int32[128]
-      size = LibMarpa.marpa_r_terminals_expected(build_recce, buffer)
-      slice = buffer.to_slice[0, size]
-
-      msg = "Unexpected symbol at line #{row}, character #{col}, expected:\n"
-      slice.each do |id|
-        msg += symbol_names[id] + "\n"
+      if id < 0
+        raise "Could not create symbol ID for #{lhs}"
       end
 
-      raise msg
+      symbols[id] = lhs
     end
-
-    status = LibMarpa.marpa_r_earleme_complete(build_recce)
-    if status < 0
-      e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-      raise "Earleme complete #{e}"
-    end
-
-    token_values[position] = value
   end
-end
-# END
 
-bocage = LibMarpa.marpa_b_new(build_recce, -1)
-if !bocage
-  e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-  raise "Bocage complete #{e}"
-end
+  rules["G1"].each do |rule|
+    lhs = rule["lhs"].as(String)
+    rhs = rule["rhs"].as(Array(String))
 
-order = LibMarpa.marpa_o_new(bocage)
-if !order
-  e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-  raise "Order complete #{e}"
-end
+    min = rule["min"]?.try &.as(String)
+    separator = rule["separator"]?.try &.as(String)
+    proper = rule["proper"]?.try &.as(String)
+    action = rule["action"]?.try &.as(String)
 
-tree = LibMarpa.marpa_t_new(order)
-if !tree
-  e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-  raise "Tree complete #{e}"
-end
-
-tree_status = LibMarpa.marpa_t_next(tree)
-if tree_status <= -1
-  e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-  raise "Tree status #{e}"
-end
-
-value = LibMarpa.marpa_v_new(tree)
-if !value
-  e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-  raise "Value returned #{e}"
-end
-
-alias Item = {String, Int32}
-alias RecArray = Item | Array(RecArray)
-
-stack = [] of RecArray
-context = [] of RecArray
-l0 = [] of RecArray
-g1 = [] of RecArray
-unconfirmed = [] of Item
-
-start_rules = [] of Array(RecArray)
-priority_rules = [] of Array(RecArray)
-quantified_rules = [] of Array(RecArray)
-discard_rules = [] of Array(RecArray)
-
-loop do
-  step_type = LibMarpa.marpa_v_step(value)
-
-  case step_type
-  when step_type.value < 0
-    e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-    raise "Event returned #{e}"
-  when LibMarpa::MarpaStepType::MARPA_STEP_RULE
-    rule = value.value
-
-    start = rule.t_arg_0
-    stop = rule.t_arg_n
-    rule_id = rule.t_rule_id
-
-    context = stack[start..stop]
-    stack.delete_at(start..stop)
-
-    case rule_id
-    when 0 # statement+ => statements
-      stack = context
-      break
-    when 5 # s_start_colon, s_op_declare_bnf, s_symbol => s_start_rule
-      start_rules << context
-    when 6 # s_lhs, s_op_declare, s_alternatives => s_priority_rule
-      s_lhs = context[0].as(Item)
-      s_op_declare = context[1].as(Item)
-
-      if s_op_declare[0] == "::="
-        g1 << s_lhs
-      else
-        l0 << s_lhs
+    # Handle start rules
+    if lhs == "[:start]"
+      status = LibMarpa.marpa_g_start_symbol(meta_grammar)
+      if status > 0
+        puts "Previous start symbol was '#{symbols[status]}', setting new start symbol to '#{rhs[0]}'."
       end
 
-      priority_rules << context
-    when 7 # s_lhs, s_op_declare, s_single_symbol, s_quantifier, s_adverb_list => s_quantified_rule
-      s_lhs = context[0].as(Item)
-      s_op_declare = context[1].as(Item)
-
-      if s_op_declare[0] == "::="
-        g1 << s_lhs
-      else
-        l0 << s_lhs
-      end
-
-      quantified_rules << context
-    when 8 # s_discard_colon, s_op_declare_match, s_single_symbol => s_discard_rule
-      discard_rules << context
-    when 11 # s_rhs+ '|' => s_alternatives
-      context.delete({"|", 22})
-    when 14     # s_adverb_item* => s_adverb_list
-    when 15, 16 # => s_{proper,separator}_specification
-      # s_proper_string, s_arrow, s_boolean => s_proper_specification
-      # s_separator_string, s_arrow, s_single_symbol => s_separator_specification
-      context.delete({"=>", 33})
-    when 18 # s_rhs_primary+ => s_rhs
-    when 22
-      context = context[1]
-    when 27, 28 # => s_symbol_name
-      context = context[0].as(Item)
-      unconfirmed << context
-    else
-      if context.size == 1
-        context = context[0]
-      end
+      LibMarpa.marpa_g_start_symbol_set(meta_grammar, symbols.key(rhs[0]))
+      next
     end
 
-    stack << context
-  when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
-    token = value.value
+    # Handle quantified rules
+    if min || proper || separator
+      min = min.try &.to_i
+      min ||= 0
 
-    token_value = token_values[token.t_token_value - 1]
-    token_id = token.t_token_id
+      proper = proper.try &.to_i
+      proper ||= 1
 
-    stack << {token_value, token_id}
-  when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
-    symbol = value.value
-  when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
-    break
-  when LibMarpa::MarpaStepType::MARPA_STEP_INITIAL
-  end
-end
-
-l0.uniq!
-g1.uniq!
-
-unconfirmed = unconfirmed - l0 - g1
-if unconfirmed.size > 0
-  symbols = unconfirmed.map { |a, b| a }.join(", ")
-  raise "Undefined symbols: #{symbols}"
-end
-
-symbols = {} of Int32 => String
-tokens = {} of String => Regex
-rule_names = {} of Int32 => String
-
-configuration = uninitialized LibMarpa::MarpaConfig
-LibMarpa.marpa_c_init(pointerof(configuration))
-
-grammar = LibMarpa.marpa_g_new(pointerof(configuration))
-LibMarpa.marpa_g_force_valued(grammar)
-
-# Create symbols
-(g1 + l0).each do |symbol|
-  id = LibMarpa.marpa_g_symbol_new(grammar)
-  value = symbol[0].as(String)
-
-  symbols[id] = value
-end
-
-start_rules.each do |rule|
-  symbol = rule[2].as(Item)
-
-  LibMarpa.marpa_g_start_symbol_set(grammar, symbols.key(symbol[0]))
-end
-
-discard = [] of String
-discard_rules.each do |rule|
-  symbol = rule[2].as(Item)
-
-  discard << symbol[0]
-end
-
-# We want to do lexical rules first
-quantified_rules.sort_by! { |a| a[1].as(Item)[1] }.reverse!
-priority_rules.sort_by! { |a| a[1].as(Item)[1] }.reverse!
-
-quantified_rules.each do |rule|
-  lhs = rule[0].as(Item)
-  op_declare = rule[1].as(Item)
-  single_symbol = rule[2].as(Item)
-  quantifier = rule[3].as(Item)
-
-  rule_name = "#{lhs[0]} #{op_declare[0]} #{single_symbol[0]}#{quantifier[0]}"
-
-  case op_declare[0]
-  when "~"
-    if single_symbol[1] == 26
-      raise "An L0 lexeme cannot appear on the RHS of an L0 rule : #{single_symbol[0]}"
-    end
-
-    regex = /(#{single_symbol[0]}#{quantifier[0]})/
-
-    if tokens[lhs[0]]?
-      tokens[lhs[0]] = Regex.union(tokens[lhs[0]], regex)
-    else
-      tokens[lhs[0]] = regex
-    end
-  when "::="
-    if quantifier[0] == "*"
-      quantifier = 0
-    else
-      quantifier = 1
-    end
-
-    separator = -1
-    proper = LibMarpa::MARPA_PROPER_SEPARATION
-
-    adverb_list = rule[4]?.try &.as(Array)
-    adverb_list ||= [] of RecArray
-    adverb_list.each do |adverb|
-      key = adverb[0].as(Item)
-      value = adverb[1].as(Item)
-
-      case key[0]
-      when "proper"
-        if value[0] == 0
-          proper = LibMarpa::MARPA_KEEP_SEPARATION
-        end
-      when "separator"
-        separator = symbols.key(value[0])
-      end
-    end
-
-    status = LibMarpa.marpa_g_sequence_new(grammar, symbols.key(lhs[0]), symbols.key(single_symbol[0]), separator, quantifier, proper)
-    if status < 0
-      raise "Unable to create sequence for #{lhs[0]}"
-    end
-
-    rule_names[status] = rule_name
-  end
-end
-
-priority_rules.each do |rule|
-  lhs = rule[0].as(Item)
-  op_declare = rule[1].as(Item)
-  alternatives = rule[2].as(Array(RecArray))
-
-  case op_declare[0]
-  when "~"
-    alternatives.each do |alternative|
-      rhs = [] of String | Regex
-      alternative = alternative.as(Array(RecArray))
-
-      alternative.each do |item|
-        item = item.as(Item)
-
-        case item[1]
-        when 25, 26 # Symbol => <elements>
-          if !tokens.has_key?(item[0])
-            raise "Can't evaluate: #{item[0]}"
-          end
-
-          rhs << tokens[item[0]]
-        when 27 # Literal => 'string'
-          rhs << Regex.escape(item[0][1..-2])
-        when 28 # Character class => [\s]
-          rhs << item[0]
+      if separator
+        if symbols.key?(separator)
+          separator = symbols.key(separator)
         else
-          raise "Unidentifiable LHS type for : #{lhs[0]}"
-        end
-      end
+          id = LibMarpa.marpa_g_symbol_new(meta_grammar)
 
-      regex = /(#{rhs.join("")})/
-
-      if tokens[lhs[0]]?
-        tokens[lhs[0]] = Regex.union(tokens[lhs[0]], regex)
-      else
-        tokens[lhs[0]] = regex
-      end
-    end
-  when "::="
-    alternatives.each do |alternative|
-      rhs = [] of Int32
-      alternative = alternative.as(Array(RecArray))
-      alternative = alternative.flatten
-
-      rule_name = "#{lhs[0]} #{op_declare[0]} #{alternative.map { |a, b| a }.join(" ")}"
-
-      alternative.each do |item|
-        item = item.as(Item)
-
-        case item[1]
-        when 25, 26 # Symbol name
-          rhs << symbols.key(item[0])
-        when 27 # Catch literals
-          literal_name = item[0]
-
-          # Create literal if it hasn't already been created
-          if !tokens.has_key?(literal_name)
-            literal_id = LibMarpa.marpa_g_symbol_new(grammar)
-
-            tokens[literal_name] = /(#{Regex.escape(literal_name[1..-2])})/
-            symbols[literal_id] = literal_name
+          if id < 0
+            raise "Could not create symbol ID for #{separator}"
           end
 
-          rhs << symbols.key(literal_name)
-        when 28 # Catch regex
-          character_name = item[0]
-
-          if !tokens.has_key?(character_name)
-            character_id = LibMarpa.marpa_g_symbol_new(grammar)
-
-            tokens[character_name] = /(#{character_name})/
-            symbols[character_id] = character_name
-          end
-
-          rhs << symbols.key(character_name)
-        else
-          raise "Unidentifiable LHS type for : #{lhs[0]}"
+          symbols[id] = separator
+          separator = id
         end
       end
+      separator ||= -1
 
-      status = LibMarpa.marpa_g_rule_new(grammar, symbols.key(lhs[0]), rhs, rhs.size)
+      status = LibMarpa.marpa_g_sequence_new(meta_grammar, symbols.key(lhs), symbols.key(rhs[0]), separator, min, proper)
       if status < 0
-        raise "Error generating rule #{lhs[0]} : #{rhs.map { |a| symbols[a] }}"
+        raise "Unable to create sequence for #{lhs}"
       end
 
-      rule_names[status] = rule_name
+      next
+    end
+
+    ids = [] of Int32
+    rhs.each do |symbol|
+      if symbol.starts_with?("'") && !symbols.key?(symbol)
+        id = LibMarpa.marpa_g_symbol_new(meta_grammar)
+
+        rules["L0"] << {"lhs" => symbol, "rhs" => [Regex.escape(symbol[1..-2])]}
+        symbols[id] = symbol
+      end
+
+      ids << symbols.key(symbol)
+    end
+
+    status = LibMarpa.marpa_g_rule_new(meta_grammar, symbols.key(lhs), ids, ids.size)
+    if status < 0
+      raise "Unable to create rule for #{lhs}"
     end
   end
+
+  tokens = {} of String => Regex
+  discard = [] of String
+
+  rules["L0"].each do |rule|
+    lhs = rule["lhs"].as(String)
+    rhs = rule["rhs"].as(Array(String))
+
+    if lhs == "[:discard]"
+      discard << rhs[0]
+      next
+    end
+
+    if lhs.starts_with? "'"
+      tokens[lhs] = Regex.new(rhs[0])
+      next
+    end
+
+    regex = ""
+
+    rhs.each do |symbol|
+      case symbol
+      when .starts_with? "'"
+        regex += Regex.escape(symbol[1..-2])
+      when .starts_with? "["
+        regex += symbol
+      else
+        if !tokens.has_key?(symbol)
+          # If we can't process a rule yet, come back 'round later
+          rules.delete(rule)
+          rules["L0"] << rule
+          next
+        else
+          regex += tokens[symbol].to_s
+        end
+      end
+    end
+
+    tokens[lhs] = Regex.new(regex)
+  end
+
+  LibMarpa.marpa_g_precompute(meta_grammar)
+  recce = LibMarpa.marpa_r_new(meta_grammar)
+  LibMarpa.marpa_r_start_input(recce)
+
+  position = 0
+  values = {} of Int32 => String
+  until position == input.size
+    last_newline = input[0..position].rindex("\n")
+    last_newline ||= 0
+
+    col = position - last_newline + 1
+    row = input[0..position].count("\n") + 1
+
+    buffer = uninitialized Int32[128]
+    size = LibMarpa.marpa_r_terminals_expected(recce, buffer)
+
+    slice = buffer.to_slice[0, size]
+    expected = [] of String
+    slice.each do |id|
+      expected << symbols[id]
+    end
+
+    matches = [] of {String, String}
+    if expected.empty?
+      break
+    else
+      expected.each do |terminal|
+        md = input.match(tokens[terminal], position)
+        if md && md.begin == position
+          matches << {md[0], terminal}
+        end
+      end
+    end
+
+    if matches.empty?
+      discard_token = false
+      discard.each do |terminal|
+        md = input.match(tokens[terminal], position)
+        if md && md.begin == position
+          position += md[0].size
+          discard_token = true
+        end
+      end
+
+      if discard_token
+        next
+      else
+        error_msg = "Lexing error at #{row}, #{col}, here: \n"
+        error_msg += input[position - 15..position + 15].gsub("\n", "\\n") + "\n"
+        error_msg += "               ^               \n"
+        error_msg += "Expected: \n"
+        expected.each do |id|
+          error_msg += "    #{id}\n"
+        end
+
+        raise error_msg
+      end
+    end
+
+    matches.sort_by! { |a, b| a.size }
+    position += matches[0][0].size
+    values[position + 1] = matches[0][0]
+
+    matches.select { |a, b| a.size == matches[0][0].size }.each do |match|
+      status = LibMarpa.marpa_r_alternative(recce, symbols.key(match[1]), position + 1, 1)
+
+      if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
+        error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
+        expected.each do |id|
+          error_msg += "#{id}\n"
+        end
+
+        raise error_msg
+      end
+    end
+
+    status = LibMarpa.marpa_r_earleme_complete(recce)
+    if status < 0
+      e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+      raise "Earleme complete: #{e}"
+    end
+  end
+
+  bocage = LibMarpa.marpa_b_new(recce, -1)
+  if !bocage
+    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    raise "Bocage complete: #{e}"
+  end
+
+  order = LibMarpa.marpa_o_new(bocage)
+  if !order
+    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    raise "Order complete: #{e}"
+  end
+
+  tree = LibMarpa.marpa_t_new(order)
+  if !tree
+    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    raise "Tree complete: #{e}"
+  end
+
+  tree_status = LibMarpa.marpa_t_next(tree)
+  if tree_status <= -1
+    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    raise "Tree status: #{e}"
+  end
+
+  value = LibMarpa.marpa_v_new(tree)
+  if !value
+    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    raise "Value returned: #{e}"
+  end
+
+  stack = [] of RecArray
+  loop do
+    step_type = LibMarpa.marpa_v_step(value)
+
+    case step_type
+    when step_type.value < 0
+      e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+      raise "Event returned #{e}"
+    when LibMarpa::MarpaStepType::MARPA_STEP_RULE
+      rule = value.value
+
+      start = rule.t_arg_0
+      stop = rule.t_arg_n
+      rule_id = rule.t_rule_id
+
+      context = stack[start..stop]
+      stack.delete_at(start..stop)
+      stack << context
+    when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
+      token = value.value
+
+      stack << {values[token.t_token_value], symbols[token.t_token_id]}
+    when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
+      symbol = value.value
+
+      start = symbol.t_arg_0
+      stop = symbol.t_arg_n
+    when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
+      stack = stack[0]
+      break
+    when LibMarpa::MarpaStepType::MARPA_STEP_INITIAL
+    end
+  end
+
+  return stack
 end
 
-LibMarpa.marpa_g_precompute(grammar)
-input = build_bnf
-
-grammar, tokens, symbols, rule_names = build_marpa(build_bnf, grammar, discard, tokens, symbols, rule_names)
-
-# Needed here are:
-# grammar, input, symbols, lexemes, rule_names
-
-# recce = LibMarpa.marpa_r_new(grammar)
-# LibMarpa.marpa_r_start_input(recce)
-
-# tokens = {} of Int32 => String
-# position = 0
-
-# until position == input.size
-#   col = position - (input[0..position].rindex("\n") || 0) + 1
-#   row = input[0..position].count("\n") + 1
-
-#   buffer = uninitialized Int32[128]
-#   size = LibMarpa.marpa_r_terminals_expected(recce, buffer)
-
-#   slice = buffer.to_slice[0, size]
-#   expected = [] of String
-#   slice.each do |id|
-#     expected << symbol_names[id]
-#   end
-
-#   matches = [] of {String, String}
-
-#   # For each expected token, try to find it at current position
-#   expected.each do |id|
-#     if md = lexemes[id].match(input, position)
-#       if md.begin == position
-#         symbol = id
-#         match = md[0]
-
-#         matches << {symbol, match}
-#       end
-#     end
-#   end
-
-#   if matches.empty?
-#     discard.each do |id|
-#       if md = lexemes[id].match(input, position)
-#         if md.begin == position
-#           symbol = id
-#           match = md[0]
-
-#           matches << {symbol, match}
-#         end
-#       end
-#     end
-#     if matches.empty?
-#       error_msg = "Lexing error at #{row}, #{col}, expected: \n"
-#       expected.each do |id|
-#         error_msg += "#{id}\n"
-#       end
-
-#       raise error_msg
-#     else
-#       position += matches[0][1].size
-#       next
-#     end
-#   end
-
-#   matches.sort_by! { |a, b| b.size }.reverse!
-
-#   symbol = matches[0][0]
-#   match = matches[0][1]
-#   position += match.size
-
-#   status = LibMarpa.marpa_r_alternative(recce, symbol_names.key(symbol), position + 1, 1)
-
-#   if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-#     error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
-#     expected.each do |id|
-#       error_msg += "#{id}\n"
-#     end
-
-#     raise error_msg
-#   end
-
-#   status = LibMarpa.marpa_r_earleme_complete(recce)
-#   if status < 0
-#     e = LibMarpa.marpa_g_error(grammar, p_error_string)
-#     raise "Earleme complete #{e}"
-#   end
-
-#   tokens[position] = match
-# end
-
-# bocage = LibMarpa.marpa_b_new(recce, -1)
-# if !bocage
-#   e = LibMarpa.marpa_g_error(grammar, p_error_string)
-#   raise "Bocage complete #{e}"
-# end
-
-# order = LibMarpa.marpa_o_new(bocage)
-# if !order
-#   e = LibMarpa.marpa_g_error(grammar, p_error_string)
-#   raise "Order complete #{e}"
-# end
-
-# tree = LibMarpa.marpa_t_new(order)
-# if !tree
-#   e = LibMarpa.marpa_g_error(grammar, p_error_string)
-#   raise "Tree complete #{e}"
-# end
-
-# tree_status = LibMarpa.marpa_t_next(tree)
-# if tree_status <= -1
-#   e = LibMarpa.marpa_g_error(grammar, p_error_string)
-#   raise "Tree status #{e}"
-# end
-
-# value = LibMarpa.marpa_v_new(tree)
-# if !value
-#   e = LibMarpa.marpa_g_error(grammar, p_error_string)
-#   raise "Value returned #{e}"
-# end
-
-# build_marpa(grammar, value, build_bnf, rule_names, token_values)
-
-# stack = [] of RecArray
-# context = [] of RecArray
-# l0 = [] of RecArray
-# g1 = [] of RecArray
-# unconfirmed = [] of Item
-
-# start_rules = [] of Array(RecArray)
-# priority_rules = [] of Array(RecArray)
-# quantified_rules = [] of Array(RecArray)
-# discard_rules = [] of Array(RecArray)
-
-# loop do
-#   step_type = LibMarpa.marpa_v_step(value)
-
-#   case step_type
-#   when step_type.value < 0
-#     e = LibMarpa.marpa_g_error(build_grammar, p_error_string)
-#     raise "Event returned #{e}"
-#   when LibMarpa::MarpaStepType::MARPA_STEP_RULE
-#     rule = value.value
-
-#     start = rule.t_arg_0
-#     stop = rule.t_arg_n
-#     rule_id = rule.t_rule_id
-
-#     context = stack[start..stop]
-#     stack.delete_at(start..stop)
-
-#     case rule_names[rule_id]
-#     when "statements ::= statement+"
-#       stack = context
-#       break
-#     when "<start rule> ::= ':start' <op declare bnf> symbol"
-#       start_rules << context
-#     when "<priority rule> ::= lhs <op declare> alternatives"
-#       s_lhs = context[0].as(Item)
-#       s_op_declare = context[1].as(Item)
-
-#       if s_op_declare[0] == "::="
-#         g1 << s_lhs
-#       else
-#         l0 << s_lhs
-#       end
-
-#       priority_rules << context
-#     when "<quantified rule> ::= lhs <op declare> <single symbol> quantifier <adverb list>"
-#       s_lhs = context[0].as(Item)
-#       s_op_declare = context[1].as(Item)
-
-#       if s_op_declare[0] == "::="
-#         g1 << s_lhs
-#       else
-#         l0 << s_lhs
-#       end
-
-#       quantified_rules << context
-#     when "<discard rule> ::= ':discard' <op declare match> <single symbol>"
-#       discard_rules << context
-#     when "alternatives ::= rhs+" # s_rhs+ '|' => s_alternatives
-#       context.delete({"|", 22})
-#     when "<adverb list> ::= <adverb item>*"
-#     when "<proper specification> ::= 'proper =>' boolean", "<separator specification> ::= 'separator =>' <single symbol>"
-#       context.delete({"=>", 33})
-#     when "rhs ::= <rhs primary>+"
-#     when "<parenthesized rhs primary list> ::= '(' <rhs list> ')'"
-#       context = context[1]
-#     when "<symbol name ::= <bare name>", "<symbol name> ::= <bracketed name>"
-#       context = context[0].as(Item)
-#       unconfirmed << context
-#     else
-#       if context.size == 1
-#         context = context[0]
-#       end
-#     end
-
-#     stack << context
-#   when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
-#     token = value.value
-
-#     token_value = token_values[token.t_token_value - 1]
-#     token_id = token.t_token_id
-
-#     stack << {token_value, token_id}
-#   when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
-#     symbol = value.value
-#   when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
-#     break
-#   when LibMarpa::MarpaStepType::MARPA_STEP_INITIAL
-#   end
-# end
-
-# l0.uniq!
-# g1.uniq!
-
-# unconfirmed = unconfirmed - l0 - g1
-# if unconfirmed.size > 0
-#   symbols = unconfirmed.map { |a, b| a }.join(", ")
-#   raise "Undefined symbols: #{symbols}"
-# end
-
-# symbols = {} of Int32 => String
-# tokens = {} of String => Regex
-# rule_names = {} of Int32 => String
-
-# configuration = uninitialized LibMarpa::MarpaConfig
-# LibMarpa.marpa_c_init(pointerof(configuration))
-
-# grammar = LibMarpa.marpa_g_new(pointerof(configuration))
-# LibMarpa.marpa_g_force_valued(grammar)
-
-# Create symbols
-# (g1 + l0).each do |symbol|
-#   id = LibMarpa.marpa_g_symbol_new(grammar)
-#   value = symbol[0].as(String)
-
-#   symbols[id] = value
-# end
-
-# start_rules.each do |rule|
-#   symbol = rule[2].as(Item)
-
-#   LibMarpa.marpa_g_start_symbol_set(grammar, symbols.key(symbol[0]))
-# end
-
-# discard = [] of String
-# discard_rules.each do |rule|
-#   symbol = rule[2].as(Item)
-
-#   discard << symbol[0]
-# end
-
-# # We want to do lexical rules first
-# quantified_rules.sort_by! { |a| a[1].as(Item)[1] }.reverse!
-# priority_rules.sort_by! { |a| a[1].as(Item)[1] }.reverse!
-
-# quantified_rules.each do |rule|
-#   lhs = rule[0].as(Item)
-#   op_declare = rule[1].as(Item)
-#   single_symbol = rule[2].as(Item)
-#   quantifier = rule[3].as(Item)
-
-#   rule_name = "#{lhs[0]} #{op_declare[0]} #{single_symbol[0]}#{quantifier[0]}"
-
-#   case op_declare[0]
-#   when "~"
-#     if single_symbol[1] == 26
-#       raise "An L0 lexeme cannot appear on the RHS of an L0 rule : #{single_symbol[0]}"
-#     end
-
-#     regex = /(#{single_symbol[0]}#{quantifier[0]})/
-
-#     if tokens[lhs[0]]?
-#       tokens[lhs[0]] = Regex.union(tokens[lhs[0]], regex)
-#     else
-#       tokens[lhs[0]] = regex
-#     end
-#   when "::="
-#     if quantifier[0] == "*"
-#       quantifier = 0
-#     else
-#       quantifier = 1
-#     end
-
-#     separator = -1
-#     proper = LibMarpa::MARPA_PROPER_SEPARATION
-
-#     adverb_list = rule[4]?.try &.as(Array)
-#     adverb_list ||= [] of RecArray
-#     adverb_list.each do |adverb|
-#       key = adverb[0].as(Item)
-#       value = adverb[1].as(Item)
-
-#       case key[0]
-#       when "proper"
-#         if value[0] == 0
-#           proper = LibMarpa::MARPA_KEEP_SEPARATION
-#         end
-#       when "separator"
-#         separator = symbols.key(value[0])
-#       end
-#     end
-
-#     status = LibMarpa.marpa_g_sequence_new(grammar, symbols.key(lhs[0]), symbols.key(single_symbol[0]), separator, quantifier, proper)
-#     if status < 0
-#       raise "Unable to create sequence for #{lhs[0]}"
-#     end
-
-#     rule_names[status] = rule_name
-#   end
-# end
-
-# priority_rules.each do |rule|
-#   lhs = rule[0].as(Item)
-#   op_declare = rule[1].as(Item)
-#   alternatives = rule[2].as(Array(RecArray))
-
-#   case op_declare[0]
-#   when "~"
-#     alternatives.each do |alternative|
-#       rhs = [] of String | Regex
-#       alternative = alternative.as(Array(RecArray))
-
-#       alternative.each do |item|
-#         item = item.as(Item)
-
-#         case item[1]
-#         when 25, 26 # Symbol => <elements>
-#           if !tokens.has_key?(item[0])
-#             raise "Can't evaluate: #{item[0]}"
-#           end
-
-#           rhs << tokens[item[0]]
-#         when 27 # Literal => 'string'
-#           rhs << Regex.escape(item[0][1..-2])
-#         when 28 # Character class => [\s]
-#           rhs << item[0]
-#         else
-#           raise "Unidentifiable LHS type for : #{lhs[0]}"
-#         end
-#       end
-
-#       regex = /(#{rhs.join("")})/
-
-#       if tokens[lhs[0]]?
-#         tokens[lhs[0]] = Regex.union(tokens[lhs[0]], regex)
-#       else
-#         tokens[lhs[0]] = regex
-#       end
-#     end
-#   when "::="
-#     alternatives.each do |alternative|
-#       rhs = [] of Int32
-#       alternative = alternative.as(Array(RecArray))
-#       alternative = alternative.flatten
-
-#       rule_name = "#{lhs[0]} #{op_declare[0]} #{alternative.map { |a, b| a }.join(" ")}"
-
-#       alternative.each do |item|
-#         item = item.as(Item)
-
-#         case item[1]
-#         when 25, 26 # Symbol name
-#           rhs << symbols.key(item[0])
-#         when 27 # Catch literals
-#           literal_name = item[0]
-
-#           # Create literal if it hasn't already been created
-#           if !tokens.has_key?(literal_name)
-#             literal_id = LibMarpa.marpa_g_symbol_new(grammar)
-
-#             tokens[literal_name] = /(#{Regex.escape(literal_name[1..-2])})/
-#             symbols[literal_id] = literal_name
-#           end
-
-#           rhs << symbols.key(literal_name)
-#         when 28 # Catch regex
-#           character_name = item[0]
-
-#           if !tokens.has_key?(character_name)
-#             character_id = LibMarpa.marpa_g_symbol_new(grammar)
-
-#             tokens[character_name] = /(#{character_name})/
-#             symbols[character_id] = character_name
-#           end
-
-#           rhs << symbols.key(character_name)
-#         else
-#           raise "Unidentifiable LHS type for : #{lhs[0]}"
-#         end
-#       end
-
-#       status = LibMarpa.marpa_g_rule_new(grammar, symbols.key(lhs[0]), rhs, rhs.size)
-#       if status < 0
-#         raise "Error generating rule #{lhs[0]} : #{rhs.map { |a| symbols[a] }}"
-#       end
-
-#       rule_names[status] = rule_name
-#     end
-#   end
-# end
+rules = metag_grammar
+stack = parse_input(rules, File.read("src/bnf/metag.bnf"))
+# pp metag_stack
+
+# stack = stack[0].as(Array(RecArray))
+stack = stack.as(Array(RecArray))
+# pp stack
+stack.each do |rule|
+  rule = rule.as(Array(RecArray))
+  op_declare = rule[0][1]
+  puts op_declare
+  
+  # if op_declare == "op declare match"
+  # Process L0 rule
+  # else
+  # Process G1 rule
+  # end
+end
