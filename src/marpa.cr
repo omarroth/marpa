@@ -152,14 +152,14 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
 
   position = 0
   values = {} of Int32 => String
+  buffer = uninitialized Int32[64]
   until position == input.size
-    last_newline = input[0..position].rindex("\n")
-    last_newline ||= 0
+    # last_newline = input[0..position].rindex("\n")
+    # last_newline ||= 0
 
-    col = position - last_newline + 1
-    row = input[0..position].count("\n") + 1
+    # col = position - last_newline + 1
+    # row = input[0..position].count("\n") + 1
 
-    buffer = uninitialized Int32[128]
     size = LibMarpa.marpa_r_terminals_expected(recce, buffer)
 
     slice = buffer.to_slice[0, size]
@@ -193,10 +193,11 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
       if discard_token
         next
       else
-        error_msg = "Lexing error at #{row}, #{col}, here: \n"
-        error_msg += input[position - 15..position + 15].gsub("\n", "\\n") + "\n"
-        error_msg += "               ^               \n"
-        error_msg += "Expected: \n"
+        # error_msg = "Lexing error at #{row}, #{col}, here: \n"
+        # error_msg += input[position - 15..position + 15].gsub("\n", "\\n") + "\n"
+        # error_msg += "               ^               \n"
+        # error_msg += "Expected: \n"
+        error_msg = "Expected: \n"
         expected.each do |id|
           error_msg += "    #{id}\n"
         end
@@ -213,7 +214,8 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
       status = LibMarpa.marpa_r_alternative(recce, symbols.key(match[1]), position + 1, 1)
 
       if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-        error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
+        # error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
+        error_msg = "Unexpected symbol, expected: \n"
         expected.each do |id|
           error_msg += "#{id}\n"
         end
