@@ -129,6 +129,8 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
         regex += Regex.escape(symbol[1..-2])
       when .starts_with? "["
         regex += symbol
+      when .starts_with? "/"
+        regex += symbol[1..-2]
       else
         if !tokens.has_key?(symbol)
           # If we can't process a rule yet, come back 'round later
