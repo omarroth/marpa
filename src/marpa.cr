@@ -1,9 +1,17 @@
 require "./helpers"
 require "./lib_marpa"
 require "json"
+require "option_parser"
 
 alias Rule = Hash(String, String | Array(String))
 alias RecArray = Array(RecArray) | {String, String}
+
+def elapsed_text(elapsed)
+  millis = elapsed.total_milliseconds
+  return "#{millis.round(2)}ms" if millis >= 1
+
+  "#{(millis * 1000).round(2)}µs"
+end
 
 def parse_input(rules : Hash(String, Array(Rule)), input : String)
   meta_config = uninitialized LibMarpa::MarpaConfig
@@ -276,13 +284,22 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
       stop = rule.t_arg_n
       rule_id = rule.t_rule_id
 
+      # puts rule
+      # puts (rules["L0"] + rules["G1"])[rule.t_token_id]
+
       context = stack[start..stop]
       stack.delete_at(start..stop)
-      stack << context
+
+      if !rules["G1"][rule_id].has_key?("min") && stop - start == 0
+        stack << context[0]
+      else
+        stack << context
+      end
     when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
       token = value.value
 
       stack << {values[token.t_token_value], symbols[token.t_token_id]}
+      # stack << values[token.t_token_value]
     when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
       symbol = value.value
 
@@ -298,21 +315,18 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
   return stack
 end
 
-rules = metag_grammar
-stack = parse_input(rules, File.read("src/bnf/metag.bnf"))
-# pp metag_stack
-
-# stack = stack[0].as(Array(RecArray))
-stack = stack.as(Array(RecArray))
-# pp stack
-stack.each do |rule|
-  rule = rule.as(Array(RecArray))
-  op_declare = rule[0][1]
-  puts op_declare
-  
-  # if op_declare == "op declare match"
-  # Process L0 rule
-  # else
-  # Process G1 rule
-  # end
+# input = File.read("src/bnf/metag.bnf")
+input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+OptionParser.parse! do |parser|
+  parser.banner = "Usage: marpa -i [file]"
+  parser.on("-i file", "--in-file=file", "Input JSON file") { |path| input = File.read(path) }
+  parser.on("-h", "--help", "Show this help") { puts parser }
 end
+
+# rules = metag_grammar
+rules = json_grammar
+stack = parse_input(rules, input)
+
+# stack = stack.as(Array(RecArray))
+# stack = stack.flatten.map { |a, b| a }.join(" ")
+# pp stack == input
