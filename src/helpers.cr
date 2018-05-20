@@ -58,3 +58,52 @@ def metag_grammar
 
   return rules
 end
+
+def json_grammar
+  rules = {} of String => Array(Rule)
+
+  rules["G1"] = [
+    {"lhs" => "json", "rhs" => ["object"]},
+    {"lhs" => "json", "rhs" => ["array"]},
+    {"lhs" => "object", "rhs" => ["lcurly", "members", "rcurly"]},
+
+    {"lhs" => "members", "rhs" => ["pair"], "min" => "0", "separator" => "comma", "proper" => "1"},
+    {"lhs" => "pair", "rhs" => ["string", "colon", "value"]},
+
+    {"lhs" => "value", "rhs" => ["string"]},
+    {"lhs" => "value", "rhs" => ["object"]},
+    {"lhs" => "value", "rhs" => ["number"]},
+    {"lhs" => "value", "rhs" => ["array"]},
+    {"lhs" => "value", "rhs" => ["true"]},
+    {"lhs" => "value", "rhs" => ["false"]},
+    {"lhs" => "value", "rhs" => ["null"]},
+
+    {"lhs" => "array", "rhs" => ["lsquare", "elements", "rsquare"]},
+    {"lhs" => "elements", "rhs" => ["value"], "min" => "0", "separator" => "comma", "proper" => "1"},
+
+    {"lhs" => "[:start]", "rhs" => ["json"]},
+  ]
+
+  rules["L0"] = [
+    {"lhs" => "lcurly", "rhs" => ["'{'"]},
+    {"lhs" => "rcurly", "rhs" => ["'}'"]},
+
+    {"lhs" => "lsquare", "rhs" => ["'['"]},
+    {"lhs" => "rsquare", "rhs" => ["']'"]},
+
+    {"lhs" => "comma", "rhs" => ["','"]},
+    {"lhs" => "colon", "rhs" => ["':'"]},
+
+    {"lhs" => "string", "rhs" => ["/\"[^\"]*\"/"]},
+    {"lhs" => "number", "rhs" => ["/-?[\\d]+[.\\d+]*/"]},
+
+    {"lhs" => "true", "rhs" => ["'true'"]},
+    {"lhs" => "false", "rhs" => ["'false'"]},
+    {"lhs" => "null", "rhs" => ["'null'"]},
+
+    {"lhs" => "whitespace", "rhs" => ["[ \\t\\n]+"]},
+    {"lhs" => "[:discard]", "rhs" => ["whitespace"]},
+  ]
+
+  return rules
+end
