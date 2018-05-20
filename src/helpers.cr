@@ -2,7 +2,7 @@ def metag_grammar
   rules = {} of String => Array(Rule)
 
   rules["G1"] = [
-    {"lhs" => "statements", "rhs" => ["statement"], "min" => "1", "action" => "none"},
+    {"lhs" => "statements", "rhs" => ["statement"], "min" => "1"},
     {"lhs" => "statement", "rhs" => ["start rule"]},
     {"lhs" => "statement", "rhs" => ["priority rule"]},
     {"lhs" => "statement", "rhs" => ["quantified rule"]},
