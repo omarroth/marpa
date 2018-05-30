@@ -4,7 +4,7 @@ require "json"
 require "option_parser"
 
 alias Rule = Hash(String, String | Array(String))
-alias RecArray = Array(RecArray) | {String, String}
+alias RecArray = Array(RecArray) | String
 
 def elapsed_text(elapsed)
   millis = elapsed.total_milliseconds
@@ -89,6 +89,9 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
       status = LibMarpa.marpa_g_sequence_new(meta_grammar, symbols.key(lhs), symbols.key(rhs[0]), separator, min, proper)
       if status < 0
         raise "Unable to create sequence for #{lhs}"
+      else
+        rules["G1"].delete(rule)
+        rules["G1"].insert(status, rule)
       end
 
       next
