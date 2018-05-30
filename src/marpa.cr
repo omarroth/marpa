@@ -287,27 +287,18 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
       stop = rule.t_arg_n
       rule_id = rule.t_rule_id
 
-      # puts rule
-      # puts (rules["L0"] + rules["G1"])[rule.t_token_id]
-
       context = stack[start..stop]
       stack.delete_at(start..stop)
 
-      if !rules["G1"][rule_id].has_key?("min") && stop - start == 0
-        stack << context[0]
-      else
-        stack << context
-      end
+      stack << context
     when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
       token = value.value
 
-      stack << {values[token.t_token_value], symbols[token.t_token_id]}
-      # stack << values[token.t_token_value]
+      stack << values[token.t_token_value]
     when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
       symbol = value.value
 
-      start = symbol.t_arg_0
-      stop = symbol.t_arg_n
+      stack << [] of RecArray
     when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
       stack = stack[0]
       break
@@ -318,18 +309,101 @@ def parse_input(rules : Hash(String, Array(Rule)), input : String)
   return stack
 end
 
-# input = File.read("src/bnf/metag.bnf")
-input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+# input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+input = File.read("src/bnf/metag.bnf")
 OptionParser.parse! do |parser|
   parser.banner = "Usage: marpa -i [file]"
   parser.on("-i file", "--in-file=file", "Input JSON file") { |path| input = File.read(path) }
   parser.on("-h", "--help", "Show this help") { puts parser }
 end
 
-# rules = metag_grammar
-rules = json_grammar
+# rules = json_grammar
+rules = metag_grammar
 stack = parse_input(rules, input)
 
-# stack = stack.as(Array(RecArray))
-# stack = stack.flatten.map { |a, b| a }.join(" ")
-# pp stack == input
+rules = {} of String => Array(Rule)
+rules["G1"] = [] of Rule
+rules["L0"] = [] of Rule
+
+stack = stack.as(Array(RecArray))
+stack.each do |rule|
+  rule = rule[0].as(Array(RecArray))
+
+  lhs = rule[0].flatten
+  op_declare = rule[1].flatten
+
+  case lhs
+  when ":start"
+    rhs = rule[2].flatten.as(Array(String))
+    rules["G1"] << {"lhs" => "[:start]", "rhs" => rhs}
+  when ":discard"
+    rhs = rule[2].flatten.as(Array(String))
+    rules["L0"] << {"lhs" => "[:discard]", "rhs" => rhs}
+  else
+    lhs = lhs[0].as(String)
+
+    if op_declare == ["::="]
+      if rule[3]?
+        # quantified
+        rhs = rule[2].flatten.as(Array(String))
+
+        quantified = Rule.new
+        quantified["lhs"] = lhs
+        quantified["rhs"] = rhs
+
+        quantifier = rule[3].flatten
+        if quantifier == ["*"]
+          quantified["min"] = "0"
+        elsif quantifier == ["+"]
+          quantified["min"] = "1"
+        end
+
+        adverbs = rule[4].as(Array)
+        adverbs.each do |adverb|
+          adverb = adverb.flatten
+          adverb.delete "=>"
+
+          name = adverb[0].as(String)
+          value = adverb[1].as(String)
+          # puts name, value
+
+          quantified[name] = value
+        end
+
+        rules["G1"] << quantified
+      else
+        # priority
+
+        alternatives = rule[2].as(Array(RecArray))
+        alternatives.delete "|"
+        alternatives.each do |rhs|
+          rules["G1"] << {"lhs" => lhs, "rhs" => rhs.flatten}
+        end
+      end
+    elsif op_declare == ["~"]
+      rhs = rule[2].flatten.as(Array(String))
+      if rule[3]?
+        quantifier = rule[3].flatten.as(Array(String))[0]
+        rhs[0] = rhs[0] + quantifier
+      end
+
+      rules["L0"] << {"lhs" => lhs, "rhs" => rhs}
+    end
+  end
+end
+
+# Extract rules (clumsily)
+# puts %(rules["L0"] = [)
+# rules["L0"].each { |a| print a, ",", "\n" }
+# puts "]"
+# puts ""
+# puts %(rules["G1"] = [)
+# rules["G1"].each { |a| print a, ",", "\n" }
+# puts "]"
+
+# Hacky way to get around type restrictions
+class String
+  def flatten
+    return self
+  end
+end
