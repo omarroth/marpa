@@ -17,6 +17,10 @@ def metag_grammar
     {"lhs" => "<regex elements>", "rhs" => ["[^\\x2F]+"]},
     {"lhs" => "<character class>", "rhs" => ["'['", "<cc elements>", "']'"]},
     {"lhs" => "<cc elements>", "rhs" => ["[^\\x5d\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]+"]},
+    {"lhs" => "[:discard]", "rhs" => ["<hash comment>"]},
+    {"lhs" => "<hash comment>", "rhs" => ["'#'", "<hash comment body>", "<vertical space char>"]},
+    {"lhs" => "<hash comment body>", "rhs" => ["[^\\x{A}\\x{B}\\x{C}\\x{D}\\x{2028}\\x{2029}]*"]},
+    {"lhs" => "<vertical space char>", "rhs" => ["[\\x{A}\\x{B}\\x{C}\\x{D}\\x{2028}\\x{2029}]"]},
   ]
 
   rules["G1"] = [

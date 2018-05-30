@@ -399,6 +399,15 @@ def parse(rules : String, input : String)
   return stack
 end
 
+input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+grammar = File.read("src/bnf/json.bnf")
+puts parse(grammar, input)
+
+# input = File.read("src/bnf/metag.bnf")
+# grammar = metag_grammar
+# stack = parse(grammar, input)
+# rules = stack_to_rules(stack)
+
 # Extract rules (clumsily)
 # puts %(rules["L0"] = [)
 # rules["L0"].each { |a| print a, ",", "\n" }
@@ -407,7 +416,3 @@ end
 # puts %(rules["G1"] = [)
 # rules["G1"].each { |a| print a, ",", "\n" }
 # puts "]"
-
-input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
-grammar = File.read("src/bnf/json.bnf")
-puts parse(grammar, input)
