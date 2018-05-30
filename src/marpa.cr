@@ -205,9 +205,9 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
         col = position - last_newline + 1
         row = input[0..position].count("\n") + 1
 
-        error_msg = "Lexing error at #{row}, #{col}, here: \n"
+        error_msg = "Lexing error at row #{row}, column #{col}, here: \n"
         error_msg += input[Math.max(position - 15, 0)..Math.min(position + 15, position)].gsub("\n", "\\n") + "\n"
-        error_msg += "^               \n"
+        error_msg += "               ^               \n"
         error_msg += "Expected: \n"
         expected.each do |id|
           error_msg += "    #{id}\n"
