@@ -4,10 +4,10 @@ statement ::= <start rule>
   | <priority rule> | <quantified rule>
   | <discard rule>
 
-<start rule> ::= (':start' <op declare bnf>) symbol
+<start rule> ::= ':start' <op declare bnf> <single symbol>
 <priority rule> ::= lhs <op declare> alternatives
 <quantified rule> ::= lhs <op declare> <single symbol> quantifier <adverb list>
-<discard rule> ::= (':discard' <op declare match>) <single symbol>
+<discard rule> ::= ':discard' <op declare match> <single symbol>
 
 <op declare> ::= <op declare bnf> | <op declare match>
 alternatives ::= rhs+
@@ -17,18 +17,19 @@ alternatives ::= rhs+
 <adverb item> ::= <separator specification> 
   | <proper specification>
 
-<separator specification> ::= ('separator' '=>') <single symbol>
-<proper specification> ::= ('proper' '=>') boolean
+<separator specification> ::= 'separator' '=>' <single symbol>
+<proper specification> ::= 'proper' '=>' boolean
 
 lhs ::= <symbol name>
 rhs ::= <rhs primary>+
 <rhs primary> ::= <single symbol> 
   | <single quoted string> 
   | <parenthesized rhs primary list>
-<parenthesized rhs primary list> ::= ('(') <rhs list> (')')
+<parenthesized rhs primary list> ::= '(' <rhs list> ')'
 <rhs list> ::= <rhs primary>+
 <single symbol> ::= symbol
   | <character class>
+  | <regex>
 symbol ::= <symbol name>
 <symbol name> ::= <bare name>
   | <bracketed name>
@@ -50,5 +51,6 @@ boolean ~ [01]
 <single quoted string> ~ ['] <string without single quote> [']
 <string without single quote> ~ [^'\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
 
+<regex> ~ '/' <cc elements> '/'
 <character class> ~ '[' <cc elements> ']'
 <cc elements> ~ [^\x5d\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
