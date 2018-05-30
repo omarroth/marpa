@@ -1,0 +1,19 @@
+:start ::= json
+json ::= object | array
+
+object ::= '{' members '}' | '{' '}'
+members ::= pair+ proper => 1 separator => comma
+pair ::= string ':' value
+
+value ::= string | object | number | array | true | false | null
+
+array ::= '[' elements ']' | '[' ']'
+elements ::= value+ proper => 1 separator => comma
+
+comma ~ ','
+string ~ /"[^\"]*"/
+number ~ /-?[\d]+[.\d+]*/
+
+true ~ 'true'
+false ~ 'false'
+null ~ 'null'
