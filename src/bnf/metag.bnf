@@ -51,6 +51,7 @@ boolean ~ [01]
 <single quoted string> ~ ['] <string without single quote> [']
 <string without single quote> ~ [^'\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
 
-<regex> ~ '/' <cc elements> '/'
+<regex> ~ '/' <regex elements> '/'
+<regex elements> ~ [^\x2F]+
 <character class> ~ '[' <cc elements> ']'
 <cc elements> ~ [^\x5d\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
