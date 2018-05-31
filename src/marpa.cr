@@ -427,10 +427,6 @@ def parse(rules : String, input : String)
   return stack
 end
 
-# input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
-# grammar = File.read("src/bnf/json.bnf")
-# puts parse(grammar, input)
-
 # input = File.read("src/bnf/metag.bnf")
 # grammar = metag_grammar
 # stack = parse(grammar, input)
@@ -446,29 +442,24 @@ end
 # puts "]"
 
 grammar = File.read("src/bnf/english.bnf")
-input = File.read("src/test.english")
-stack = parse(grammar, input)
-
 input = File.read("src/sample.english")
-OptionParser.parse! do |parser|
-  parser.banner = "Usage: marpa [arguments]"
-  parser.on("-i FILE", "--input=FILE", "Input file") { |file| input = File.read(file) }
-  parser.on("-h", "--help", "Show this help") { puts parser }
-end
+# input = <<-END_INPUT
+# How many is thirty-nine?
+# # How about fourty-five?
+# What about this book?
+# How about this book?
+# And this book?
+# Is he for real?
+# If I have five eggs, how many eggs do I have.
+# To be precomputed, a grammar must have one or more symbols.
+# END_INPUT
 
-stack = parse(grammar, input)
+# OptionParser.parse! do |parser|
+#   parser.banner = "Usage: marpa [arguments]"
+#   parser.on("-i FILE", "--input=FILE", "Input file") { |file| input = File.read(file) }
+#   parser.on("-h", "--help", "Show this help") { puts parser }
+# end
 
-grammar = File.read("src/bnf/english.bnf")
-input = <<-END_INPUT
-How many is thirty-nine?
-# How about fourty-five?
-What about this book?
-How about this book?
-And this book?
-Is he for real?
-If I have five eggs, how many eggs do I have.
-To be precomputed, a grammar must have one or more symbols.
-END_INPUT
 stack = parse(grammar, input)
 
 stack = stack.as(Array(RecArray))
