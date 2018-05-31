@@ -1,0 +1,147 @@
+:start ::= ROOTS
+ROOTS ::= ROOT+
+ROOT ::= TYPE stop
+TYPE ::= FRAG
+| S
+| SBARQ
+| SQ
+FRAG ::= SBARQ
+SBARQ ::= WHADJP SQ
+| WHADVP SQ
+| WHNP SQ
+SBAR ::= S
+| WHADJP S
+| WHNP S
+| IN S
+SQ ::= RB <NP SEQ>
+| VBP <NP SEQ>
+| VBP <NP SEQ> ADJP
+| VBZ <NP SEQ>
+| VBZ <NP SEQ> NN
+S ::= ADVP NP VP
+| NP ADVP VP
+| NP VP
+| PP NP VP
+| S VP
+| S comma CC S
+| SBAR VP
+| VP
+| NP
+
+<JJ SEQ> ::= JJ*
+<NNP SEQ> ::= NNP+
+<NNPS SEQ> ::= NNPS+
+
+NP ::= <JJ SEQ> NN CC NP
+| <JJ SEQ> NN
+| <JJ SEQ> NN NP
+| <JJ SEQ> NNS
+| <NNP SEQ>
+| <NNPS SEQ>
+| CD
+| CD '-' NP
+| CD NP
+| DT
+| DT <JJ SEQ> NP
+| DT JJS
+| NN
+| NN NP
+| NNS
+| NNS NP
+| NP CC NP
+| NP SBAR
+| NP UCP
+| NP comma
+| NP comma NP
+| PRP
+| PRP NP
+| QP
+| RB
+
+VP ::= ADJP
+| ADJP S
+| MD VP
+| NP
+| NP VP
+| PP
+| PRT
+| TO VP
+| VB
+| VB SBAR
+| VB VP
+| VBD
+| VBD VP
+| VBG
+| VBG VP
+| VBN VP
+| VBP ADJP ADVP
+| VBP RB NP
+| VBP S
+| VBP VP
+| VBZ ADJP
+| VBZ RB NP
+| VBZ S
+| VBZ SBAR
+| VBZ VP
+| VP CC VP
+ADVP ::= PP+
+ADJP ::= IN PP
+| JJ
+| JJ PP
+| JJ S
+| NP JJ
+| RB JJ
+| RB JJ PP
+| VBG
+<NP SEQ> ::= NP+
+WHNP ::= WP
+| WDT NN
+| WHADJP NNS
+WHADJP ::= RB WP
+| WRB JJ
+WHADVP ::= WRB
+PP ::= FW NP
+| IN
+| RB
+| IN NP
+| TO NP
+PRT ::= RP
+UCP ::= ADJP ':' NP
+QP  ::= JJR IN DT
+
+CC   ~ /and/
+CD   ~ /fourty|one|two|three|four|five|six|seven|eight|nine|ten|eleven|eleventy|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred/
+DT   ~ /This|this|That|that|These|these|Those|those|The|the|All|half|an|A|a|No|no/
+FW   ~ /a/
+IN   ~ /on|above|during|than|At|at|for|of|into|in|as|out|over|past|by|through|though|from|with/
+JJ   ~ /real|several|right|left|varicose|electric|present|ruggedly|handsome|black|heavy|wide|enormous|indoor|coloured|old|boiled|gritty|vile|bright|untouched|many|good|full|strong|other|weak|kind|old|favorite|cold|difficult|wonderful|interested|fond|thirsty|busy|afraid|sure|sorry|quiet|glad|ready|sharp|much/
+JJR  ~ /more/
+JJS  ~ /best/
+MD   ~ /would|must/
+NN   ~ /way|ankle|ulcer|flat|preparation|drive|economy|part|daylight|current|lift|use|moustache|metre|meter|face|wall|display|poster|end|rag|cabbage|hallway|dust|swirl|glass|wind|effort|breast|chin|life|aspect|quarter|news|sausage|dog|book|pencil|address|name|color|size|day|today|Milk|yard|picture|idea|something|girl|door|question|father|office|man|breakfast|egg|time|friend|tennis|child/
+NNP  ~ /Victory|April|Winston|Smith|Hate|Week/
+NNPS ~ /Mansions/
+NNS  ~ /flights|hours|mats|doors|books|pencils|children|letters|o'clock|eggs|minutes|flowers|rice|rolls|clocks|features|stairs|times/
+PRP  ~ /yourself|My|it|your|you|One|he|my|we|It|I|his|they|me|him/
+RB   ~ /up|Even|about|also|not|very|exactly|there|just|now|n't|only|quickly|enough|too|large|simply|seldom|slowly/
+RP   ~ /up|along/
+TO   ~ /to|To/
+VB   ~ /escape|eat|do|add|be|learn|get|hear|Help|prevent/
+VBD  ~ /said|was|were|slipped|had|made|went/
+VBG  ~ /working|helping|eating|going|manufacturing|striking|entering|trying/
+VBN  ~ /cutoff|nuzzled|smelt|been|tacked|depicted|resting/
+VBP  ~ /are|Are|have|suggest|want|am|'m|like|hate/
+VBZ  ~ /goes|likes|is|Is|'s/
+WDT  ~ /What/
+WP   ~ /What|what|Who|who/
+WRB  ~ /How|Where|Do/
+
+comma ~ ','
+stop  ~ /\.|\?|\!/
+
+# Allow comments
+:discard ~ <hash comment>
+<hash comment> ~ /#[^\n]*/
+
+:discard ~ whitespace
+whitespace ~ [\s]+

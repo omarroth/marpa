@@ -15,11 +15,11 @@ def elapsed_text(elapsed)
 end
 
 def parse(rules : Hash(String, Array(Rule)), input : String)
-  meta_config = uninitialized LibMarpa::MarpaConfig
-  LibMarpa.marpa_c_init(pointerof(meta_config))
+  config = uninitialized LibMarpa::MarpaConfig
+  LibMarpa.marpa_c_init(pointerof(config))
 
-  meta_grammar = LibMarpa.marpa_g_new(pointerof(meta_config))
-  LibMarpa.marpa_g_force_valued(meta_grammar)
+  grammar = LibMarpa.marpa_g_new(pointerof(config))
+  LibMarpa.marpa_g_force_valued(grammar)
 
   p_error_string = String.new
 
@@ -33,7 +33,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
     end
 
     if !symbols.key?(lhs)
-      id = LibMarpa.marpa_g_symbol_new(meta_grammar)
+      id = LibMarpa.marpa_g_symbol_new(grammar)
 
       if id < 0
         raise "Could not create symbol ID for #{lhs}"
@@ -54,12 +54,12 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
 
     # Handle start rules
     if lhs == "[:start]"
-      status = LibMarpa.marpa_g_start_symbol(meta_grammar)
+      status = LibMarpa.marpa_g_start_symbol(grammar)
       if status > 0
         puts "Previous start symbol was '#{symbols[status]}', setting new start symbol to '#{rhs[0]}'."
       end
 
-      LibMarpa.marpa_g_start_symbol_set(meta_grammar, symbols.key(rhs[0]))
+      LibMarpa.marpa_g_start_symbol_set(grammar, symbols.key(rhs[0]))
       next
     end
 
@@ -75,7 +75,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
         if symbols.key?(separator)
           separator = symbols.key(separator)
         else
-          id = LibMarpa.marpa_g_symbol_new(meta_grammar)
+          id = LibMarpa.marpa_g_symbol_new(grammar)
 
           if id < 0
             raise "Could not create symbol ID for #{separator}"
@@ -87,9 +87,10 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
       end
       separator ||= -1
 
-      status = LibMarpa.marpa_g_sequence_new(meta_grammar, symbols.key(lhs), symbols.key(rhs[0]), separator, min, proper)
+      status = LibMarpa.marpa_g_sequence_new(grammar, symbols.key(lhs), symbols.key(rhs[0]), separator, min, proper)
       if status < 0
-        raise "Unable to create sequence for #{lhs}"
+        error = LibMarpa.marpa_g_error(grammar, p_error_string)
+        raise "Unable to create sequence for #{lhs}, error: #{error}"
       else
         rules["G1"].delete(rule)
         rules["G1"].insert(status, rule)
@@ -101,7 +102,11 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
     ids = [] of Int32
     rhs.each do |symbol|
       if symbol.starts_with?("'") && !symbols.key?(symbol)
-        id = LibMarpa.marpa_g_symbol_new(meta_grammar)
+        id = LibMarpa.marpa_g_symbol_new(grammar)
+
+        if id < 0
+          raise "Could not create symbol ID for #{lhs}"
+        end
 
         rules["L0"] << {"lhs" => symbol, "rhs" => [Regex.escape(symbol[1..-2])]}
         symbols[id] = symbol
@@ -110,9 +115,10 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
       ids << symbols.key(symbol)
     end
 
-    status = LibMarpa.marpa_g_rule_new(meta_grammar, symbols.key(lhs), ids, ids.size)
+    status = LibMarpa.marpa_g_rule_new(grammar, symbols.key(lhs), ids, ids.size)
     if status < 0
-      raise "Unable to create rule for #{lhs}"
+      error = LibMarpa.marpa_g_error(grammar, p_error_string)
+      raise "Unable to create rule for #{lhs}, error: #{error}"
     end
   end
 
@@ -158,8 +164,13 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
     tokens[lhs] = Regex.new(regex)
   end
 
-  LibMarpa.marpa_g_precompute(meta_grammar)
-  recce = LibMarpa.marpa_r_new(meta_grammar)
+  LibMarpa.marpa_g_error_clear(grammar)
+  LibMarpa.marpa_g_precompute(grammar)
+  status = LibMarpa.marpa_g_error(grammar, p_error_string)
+  if status.value > 0
+    raise status.to_s
+  end
+  recce = LibMarpa.marpa_r_new(grammar)
   LibMarpa.marpa_r_start_input(recce)
 
   position = 0
@@ -179,7 +190,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
       break
     else
       expected.each do |terminal|
-        md = input.match(tokens[terminal], position)
+        md = tokens[terminal].match(input, position)
         if md && md.begin == position
           matches << {md[0], terminal}
         end
@@ -202,12 +213,15 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
         last_newline = input[0..position].rindex("\n")
         last_newline ||= 0
 
-        col = position - last_newline + 1
+        col = position - last_newline
         row = input[0..position].count("\n") + 1
 
-        error_msg = "Lexing error at row #{row}, column #{col}, here: \n"
-        error_msg += input[Math.max(position - 15, 0)..Math.min(position + 15, position)].gsub("\n", "\\n") + "\n"
-        error_msg += "               ^               \n"
+        error_msg = "Lexing error at row #{row}, column #{col}, here:\n"
+        error_msg += input[last_newline..position + 3]
+        error_msg += "...\n"
+        error_msg += " " * col
+        error_msg += "^\n"
+
         error_msg += "Expected: \n"
         expected.each do |id|
           error_msg += "    #{id}\n"
@@ -217,7 +231,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
       end
     end
 
-    matches.sort_by! { |a, b| a.size }
+    matches.sort_by! { |a, b| a.size }.reverse!
     position += matches[0][0].size
     values[position + 1] = matches[0][0]
 
@@ -237,38 +251,38 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
 
     status = LibMarpa.marpa_r_earleme_complete(recce)
     if status < 0
-      e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+      e = LibMarpa.marpa_g_error(grammar, p_error_string)
       raise "Earleme complete: #{e}"
     end
   end
 
   bocage = LibMarpa.marpa_b_new(recce, -1)
   if !bocage
-    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    e = LibMarpa.marpa_g_error(grammar, p_error_string)
     raise "Bocage complete: #{e}"
   end
 
   order = LibMarpa.marpa_o_new(bocage)
   if !order
-    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    e = LibMarpa.marpa_g_error(grammar, p_error_string)
     raise "Order complete: #{e}"
   end
 
   tree = LibMarpa.marpa_t_new(order)
   if !tree
-    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    e = LibMarpa.marpa_g_error(grammar, p_error_string)
     raise "Tree complete: #{e}"
   end
 
   tree_status = LibMarpa.marpa_t_next(tree)
   if tree_status <= -1
-    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    e = LibMarpa.marpa_g_error(grammar, p_error_string)
     raise "Tree status: #{e}"
   end
 
   value = LibMarpa.marpa_v_new(tree)
   if !value
-    e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+    e = LibMarpa.marpa_g_error(grammar, p_error_string)
     raise "Value returned: #{e}"
   end
 
@@ -278,7 +292,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
 
     case step_type
     when step_type.value < 0
-      e = LibMarpa.marpa_g_error(meta_grammar, p_error_string)
+      e = LibMarpa.marpa_g_error(grammar, p_error_string)
       raise "Event returned #{e}"
     when LibMarpa::MarpaStepType::MARPA_STEP_RULE
       rule = value.value
@@ -399,9 +413,9 @@ def parse(rules : String, input : String)
   return stack
 end
 
-input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
-grammar = File.read("src/bnf/json.bnf")
-puts parse(grammar, input)
+# input = %([1,"abc\ndef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+# grammar = File.read("src/bnf/json.bnf")
+# puts parse(grammar, input)
 
 # input = File.read("src/bnf/metag.bnf")
 # grammar = metag_grammar
@@ -416,3 +430,33 @@ puts parse(grammar, input)
 # puts %(rules["G1"] = [)
 # rules["G1"].each { |a| print a, ",", "\n" }
 # puts "]"
+
+grammar = File.read("src/bnf/english.bnf")
+input = File.read("src/test.english")
+stack = parse(grammar, input)
+
+input = File.read("src/sample.english")
+OptionParser.parse! do |parser|
+  parser.banner = "Usage: marpa [arguments]"
+  parser.on("-i FILE", "--input=FILE", "Input file") { |file| input = File.read(file) }
+  parser.on("-h", "--help", "Show this help") { puts parser }
+end
+
+stack = parse(grammar, input)
+
+# grammar = File.read("src/bnf/english.bnf")
+# input = <<-END_INPUT
+# How many is thirty-nine?
+# # How about fourty-five?
+# Is he for real?
+# END_INPUT
+# stack = parse(grammar, input)
+
+stack = stack.as(Array(RecArray))
+stack.each do |sentence|
+  sentence = sentence.as(Array(RecArray))
+  sentence = sentence.flatten.as(Array(String))
+  # sentence = sentence.join(" ")
+
+  puts sentence
+end
