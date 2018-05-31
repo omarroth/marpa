@@ -140,6 +140,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
     end
 
     regex = ""
+    options = Regex::Options::None
 
     rhs.each do |symbol|
       case symbol
@@ -148,7 +149,20 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
       when .starts_with? "["
         regex += symbol
       when .starts_with? "/"
-        regex += symbol[1..-2]
+        body = symbol[1..-1].rpartition("/")
+        right_side = body[2]
+
+        if right_side.includes? "i"
+          options = options | Regex::Options::IGNORE_CASE
+        end
+        if right_side.includes? "m"
+          options = options | Regex::Options::MULTILINE
+        end
+        if right_side.includes? "x"
+          options = options | Regex::Options::EXTENDED
+        end
+
+        regex += body[0]
       else
         if !tokens.has_key?(symbol)
           # If we can't process a rule yet, come back 'round later
@@ -161,7 +175,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
       end
     end
 
-    tokens[lhs] = Regex.new(regex)
+    tokens[lhs] = Regex.new(regex, options)
   end
 
   LibMarpa.marpa_g_error_clear(grammar)
