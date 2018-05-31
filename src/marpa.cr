@@ -444,18 +444,23 @@ end
 
 stack = parse(grammar, input)
 
-# grammar = File.read("src/bnf/english.bnf")
-# input = <<-END_INPUT
-# How many is thirty-nine?
-# # How about fourty-five?
-# Is he for real?
-# END_INPUT
-# stack = parse(grammar, input)
+grammar = File.read("src/bnf/english.bnf")
+input = <<-END_INPUT
+How many is thirty-nine?
+# How about fourty-five?
+What about this book?
+How about this book?
+And this book?
+Is he for real?
+If I have five eggs, how many eggs do I have.
+To be precomputed, a grammar must have one or more symbols.
+END_INPUT
+stack = parse(grammar, input)
 
 stack = stack.as(Array(RecArray))
 stack.each do |sentence|
   sentence = sentence.as(Array(RecArray))
-  sentence = sentence.flatten.as(Array(String))
+  # sentence = sentence.flatten.as(Array(String))
   # sentence = sentence.join(" ")
 
   puts sentence
