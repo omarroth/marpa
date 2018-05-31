@@ -10,7 +10,7 @@ statement ::= <start rule>
 <discard rule> ::= ':discard' <op declare match> <single symbol>
 
 <op declare> ::= <op declare bnf> | <op declare match>
-alternatives ::= rhs+
+alternatives ::= rhs*
     separator => <op equal priority> proper => 1
 
 <adverb list> ::= <adverb item>*

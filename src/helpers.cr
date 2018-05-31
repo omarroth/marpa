@@ -20,9 +20,9 @@ def metag_grammar
     {"lhs" => "<hash comment>", "rhs" => ["'#'", "<hash comment body>", "<vertical space char>"]},
     {"lhs" => "<hash comment body>", "rhs" => ["[^\\x{A}\\x{B}\\x{C}\\x{D}\\x{2028}\\x{2029}]*"]},
     {"lhs" => "<vertical space char>", "rhs" => ["[\\x{A}\\x{B}\\x{C}\\x{D}\\x{2028}\\x{2029}]"]},
-  ]
-
-  rules["G1"] = [
+    ]
+    
+    rules["G1"] = [
     {"lhs" => "[:start]", "rhs" => ["statements"]},
     {"lhs" => "statements", "rhs" => ["statement"], "min" => "1"},
     {"lhs" => "statement", "rhs" => ["<start rule>"]},
@@ -35,7 +35,7 @@ def metag_grammar
     {"lhs" => "<discard rule>", "rhs" => ["':discard'", "<op declare match>", "<single symbol>"]},
     {"lhs" => "<op declare>", "rhs" => ["<op declare bnf>"]},
     {"lhs" => "<op declare>", "rhs" => ["<op declare match>"]},
-    {"lhs" => "alternatives", "rhs" => ["rhs"], "min" => "1", "separator" => "<op equal priority>", "proper" => "1"},
+    {"lhs" => "alternatives", "rhs" => ["rhs"], "min" => "0", "separator" => "<op equal priority>", "proper" => "1"},
     {"lhs" => "<adverb list>", "rhs" => ["<adverb item>"], "min" => "0"},
     {"lhs" => "<adverb item>", "rhs" => ["<separator specification>"]},
     {"lhs" => "<adverb item>", "rhs" => ["<proper specification>"]},
@@ -56,7 +56,7 @@ def metag_grammar
     {"lhs" => "<symbol name>", "rhs" => ["<bracketed name>"]},
     {"lhs" => "quantifier", "rhs" => ["'*'"]},
     {"lhs" => "quantifier", "rhs" => ["'+'"]},
-  ]
+    ]
 
   return rules
 end
