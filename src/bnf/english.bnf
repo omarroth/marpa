@@ -112,32 +112,32 @@ UCP ::= ADJP ':' NP
 QP  ::= JJR IN DT
 | CD CC JJR
 
-CC   ~ /and|or|And/
-CD   ~ /fourty|one|two|three|four|five|six|seven|eight|nine|ten|eleven|eleventy|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred/
-DT   ~ /This|this|That|that|These|these|Those|those|The|the|All|half|an|A|a|No|no/
+CC   ~ /and|or/i
+CD   ~ /fourty|one|two|three|four|five|six|seven|eight|nine|ten|eleven|eleventy|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred/i
+DT   ~ /this|that|these|those|the|all|half|an|a|no/i
 FW   ~ /a/
-IN   ~ /If|on|above|during|than|At|at|for|of|into|in|as|out|over|past|by|through|though|from|with/
-JJ   ~ /real|several|right|left|varicose|electric|present|ruggedly|handsome|black|heavy|wide|enormous|indoor|coloured|old|boiled|gritty|vile|bright|untouched|many|good|full|strong|other|weak|kind|old|favorite|cold|difficult|wonderful|interested|fond|thirsty|busy|afraid|sure|sorry|quiet|glad|ready|sharp|much/
-JJR  ~ /more/
-JJS  ~ /best/
-MD   ~ /would|must/
-NN   ~ /grammar|way|ankle|ulcer|flat|preparation|drive|economy|part|daylight|current|lift|use|moustache|metre|meter|face|wall|display|poster|end|rag|cabbage|hallway|dust|swirl|glass|wind|effort|breast|chin|life|aspect|quarter|news|sausage|dog|book|pencil|address|name|color|size|day|today|Milk|yard|picture|idea|something|girl|door|question|father|office|man|breakfast|egg|time|friend|tennis|child/
+IN   ~ /if|on|above|during|than|at|for|of|into|in|as|out|over|past|by|through|though|from|with/i
+JJ   ~ /real|several|right|left|varicose|electric|present|ruggedly|handsome|black|heavy|wide|enormous|indoor|coloured|old|boiled|gritty|vile|bright|untouched|many|good|full|strong|other|weak|kind|old|favorite|cold|difficult|wonderful|interested|fond|thirsty|busy|afraid|sure|sorry|quiet|glad|ready|sharp|much/i
+JJR  ~ /more/i
+JJS  ~ /best/i
+MD   ~ /would|must/i
+NN   ~ /grammar|way|ankle|ulcer|flat|preparation|drive|economy|part|daylight|current|lift|use|moustache|metre|meter|face|wall|display|poster|end|rag|cabbage|hallway|dust|swirl|glass|wind|effort|breast|chin|life|aspect|quarter|news|sausage|dog|book|pencil|address|name|color|size|day|today|Milk|yard|picture|idea|something|girl|door|question|father|office|man|breakfast|egg|time|friend|tennis|child/i
 NNP  ~ /Victory|April|Winston|Smith|Hate|Week/
 NNPS ~ /Mansions/
 NNS  ~ /symbols|flights|hours|mats|doors|books|pencils|children|letters|o'clock|eggs|minutes|flowers|rice|rolls|clocks|features|stairs|times/
-PRP  ~ /yourself|My|it|your|you|One|he|my|we|It|I|his|they|me|him/
-RB   ~ /up|Even|about|also|not|very|exactly|there|just|now|n't|only|quickly|enough|too|large|simply|seldom|slowly/
+PRP  ~ /yourself|it|your|you|one|he|my|we|it|I|his|they|me|him/i
+RB   ~ /up|even|about|also|not|very|exactly|there|just|now|n't|only|quickly|enough|too|large|simply|seldom|slowly/i
 RP   ~ /up|along/
-TO   ~ /to|To/
-VB   ~ /escape|eat|do|add|be|learn|get|hear|Help|prevent|have/
+TO   ~ /to/
+VB   ~ /escape|eat|do|add|be|learn|get|hear|help|prevent|have/i
 VBD  ~ /said|was|were|slipped|had|made|went/
 VBG  ~ /working|helping|eating|going|manufacturing|striking|entering|trying/
 VBN  ~ /precomputed|cutoff|nuzzled|smelt|been|tacked|depicted|resting/
 VBP  ~ /are|Are|have|suggest|want|am|'m|like|hate/
-VBZ  ~ /goes|likes|is|Is|'s/
-WDT  ~ /What/
-WP   ~ /What|what|Who|who/
-WRB  ~ /How|Where|Do|how/
+VBZ  ~ /goes|likes|is|'s/i
+WDT  ~ /what/i
+WP   ~ /what|who/i
+WRB  ~ /where|do|how/i
 
 comma ~ ','
 stop  ~ /\.|\?|\!/
