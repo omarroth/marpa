@@ -1,146 +1,69 @@
 :start ::= ROOTS
+
 ROOTS ::= ROOT+
-ROOT ::= TYPE stop
-TYPE ::= FRAG
-| S
+
+ROOT ::= TYPE period
+
+TYPE ::= S
+| SBAR
 | SBARQ
 | SQ
-FRAG ::= SBARQ
-| CC NP
-SBARQ ::= WHADJP SQ
-| WHADVP SQ
-| WHNP SQ
-SBAR ::= S
-| WHADJP S
-| WHNP S
-| IN S
-SQ ::= RB <NP SEQ>
-| VBP <NP SEQ>
-| VBP <NP SEQ> ADJP
-| VBZ <NP SEQ>
-| VBZ <NP SEQ> NN
-S ::= ADVP NP VP
-| NP ADVP VP
+
+S ::= NP
 | NP VP
-| PP NP VP
-| S VP
-| S comma CC S
-| S comma S
-| SBAR VP
+| SBAR S
 | VP
-| NP
 
-<JJ SEQ> ::= JJ+
-<NNP SEQ> ::= NNP+
-<NNPS SEQ> ::= NNPS+
+SBARQ ::= WHNP SQ
 
-NP ::= <JJ SEQ> NP
-| <NNP SEQ>
-| <NNPS SEQ>
-| CD
-| CD '-' NP
-| CD NP
-| DT
-| DT <JJ SEQ> NP
+SQ ::= S
+
+SBAR ::= WHNP S
+| S
+
+NP ::= DT
 | DT NP
-| JJS
+| IN NP
+| JJ NP
 | NN
-| NN NP
 | NNS
-| NNS NP
 | NP CC NP
-| NP SBAR
-| NP UCP
-| NP comma
-| NP comma NP
 | PRP
-| PRP NP
-| QP
-| QP NP
-| RB
+| RB NP
 
-VP ::= ADJP
-| ADJP S
-| MD VP
-| NP
-| NP VP
-| PP
-| PRT
+VP ::= MD VP
 | TO VP
 | VB
-| VB SBAR
-| VB VP
-| VBD
-| VBD VP
 | VBG
-| VBG VP
-| VBN
-| VBN VP
-| VBP ADJP ADVP
-| VBP RB NP
+| VBP RB S
 | VBP S
-| VBP VP
-| VBZ ADJP
-| VBZ RB NP
+| VBZ JJ S
+| VBZ RB S
 | VBZ S
-| VBZ SBAR
-| VBZ VP
-| VP CC VP
-ADVP ::= PP+
-ADJP ::= IN PP
-| JJ
-| JJ PP
-| JJ S
-| NP JJ
-| RB JJ
-| RB JJ PP
-| VBG
-<NP SEQ> ::= NP+
+| WBD
+
 WHNP ::= WP
-| WDT NN
-| WHADJP NNS
-WHADJP ::= RB WP
-| WRB JJ
-WHADVP ::= WRB
-PP ::= FW NP
-| IN
-| RB
-| IN NP
-| TO NP
-PRT ::= RP
-UCP ::= ADJP ':' NP
-QP  ::= JJR IN DT
-| CD CC JJR
 
-CC   ~ /and|or/i
-CD   ~ /fourty|one|two|three|four|five|six|seven|eight|nine|ten|eleven|eleventy|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred/i
-DT   ~ /this|that|these|those|the|all|half|an|a|no/i
-FW   ~ /a/
-IN   ~ /if|on|above|during|than|at|for|of|into|in|as|out|over|past|by|through|though|from|with/i
-JJ   ~ /real|several|right|left|varicose|electric|present|ruggedly|handsome|black|heavy|wide|enormous|indoor|coloured|old|boiled|gritty|vile|bright|untouched|many|good|full|strong|other|weak|kind|old|favorite|cold|difficult|wonderful|interested|fond|thirsty|busy|afraid|sure|sorry|quiet|glad|ready|sharp|much/i
-JJR  ~ /more/i
-JJS  ~ /best/i
-MD   ~ /would|must/i
-NN   ~ /grammar|way|ankle|ulcer|flat|preparation|drive|economy|part|daylight|current|lift|use|moustache|metre|meter|face|wall|display|poster|end|rag|cabbage|hallway|dust|swirl|glass|wind|effort|breast|chin|life|aspect|quarter|news|sausage|dog|book|pencil|address|name|color|size|day|today|Milk|yard|picture|idea|something|girl|door|question|father|office|man|breakfast|egg|time|friend|tennis|child/i
-NNP  ~ /Victory|April|Winston|Smith|Hate|Week/
-NNPS ~ /Mansions/
-NNS  ~ /symbols|flights|hours|mats|doors|books|pencils|children|letters|o'clock|eggs|minutes|flowers|rice|rolls|clocks|features|stairs|times/
-PRP  ~ /yourself|it|your|you|one|he|my|we|it|I|his|they|me|him/i
-RB   ~ /up|even|about|also|not|very|exactly|there|just|now|n't|only|quickly|enough|too|large|simply|seldom|slowly/i
-RP   ~ /up|along/
-TO   ~ /to/
-VB   ~ /escape|eat|do|add|be|learn|get|hear|help|prevent|have/i
-VBD  ~ /said|was|were|slipped|had|made|went/
-VBG  ~ /working|helping|eating|going|manufacturing|striking|entering|trying/
-VBN  ~ /precomputed|cutoff|nuzzled|smelt|been|tacked|depicted|resting/
-VBP  ~ /are|Are|have|suggest|want|am|'m|like|hate/
-VBZ  ~ /goes|likes|is|'s/i
-WDT  ~ /what/i
-WP   ~ /what|who/i
-WRB  ~ /where|do|how/i
+CC  ~ /and|as/i
+DT  ~ /all|this|that|these|those|a|the/i
+IN  ~ /for|about|into|in|out|of|as/i
+JJ  ~ /full|good|kind|your|my/i
+MD  ~ /would/i
+NN  ~ /door|girl|something|idea|picture|yard|pencil|book|address|name|color|size|day|today|milk|question|mine|yours|plan/i
+NNS ~ /children|books|pencils|letters|cats|dogs|eggs/i
+PRP ~ /it|you|me|he|her|we|of|i/i
+RB  ~ /too|not|very|exactly|early/i
+TO  ~ /to/i
+VB  ~ /eat|do|add|be|want|learn|like/i
+VBG ~ /going/i
+VBP ~ /are|have|suggest/i
+VBZ ~ /is|'s/i
+WBD ~ /said/i
+WP  ~ /what/i
 
-comma ~ ','
-stop  ~ /\.|\?|\!/
+comma  ~ ','
+hyphen ~ '-'
+period ~ /\.|\?|\!/
 
 # Allow comments
 :discard ~ <hash comment>
@@ -148,3 +71,6 @@ stop  ~ /\.|\?|\!/
 
 :discard ~ whitespace
 whitespace ~ [\s]+
+
+# :discard ~ word
+word ~ /'?\w+/
