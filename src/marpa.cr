@@ -14,7 +14,7 @@ def elapsed_text(elapsed)
   "#{(millis * 1000).round(2)}µs"
 end
 
-def parse(rules : Hash(String, Array(Rule)), input : String)
+def parse(rules : Hash(String, Array(Rule)), input : String, tag : Bool = false)
   config = uninitialized LibMarpa::MarpaConfig
   LibMarpa.marpa_c_init(pointerof(config))
 
@@ -327,7 +327,11 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
     when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
       token = value.value
 
+      if tag
+        stack << "#{values[token.t_token_value]}/#{symbols[token.t_token_id]}"
+      else
       stack << values[token.t_token_value]
+      end
     when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
       symbol = value.value
 
