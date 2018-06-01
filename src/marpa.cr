@@ -182,7 +182,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
   LibMarpa.marpa_g_precompute(grammar)
   status = LibMarpa.marpa_g_error(grammar, p_error_string)
   if status.value > 0
-    raise status.to_s
+    raise "Precomputing grammar produced #{status}"
   end
   recce = LibMarpa.marpa_r_new(grammar)
   LibMarpa.marpa_r_start_input(recce)
@@ -231,9 +231,9 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
         row = input[0..position].count("\n") + 1
 
         error_msg = "Lexing error at row #{row}, column #{col}, here:\n"
-        error_msg += input[last_newline..position + 3]
-        error_msg += "...\n"
-        error_msg += " " * col
+        error_msg += input[last_newline..position]
+        error_msg += "\n"
+        error_msg += " " * Math.max(col - 1, 0)
         error_msg += "^\n"
 
         error_msg += "Expected: \n"
@@ -253,8 +253,13 @@ def parse(rules : Hash(String, Array(Rule)), input : String)
       status = LibMarpa.marpa_r_alternative(recce, symbols.key(match[1]), position + 1, 1)
 
       if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-        # error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
-        error_msg = "Unexpected symbol, expected: \n"
+        last_newline = input[0..position].rindex("\n")
+        last_newline ||= 0
+
+        col = position - last_newline
+        row = input[0..position].count("\n") + 1
+
+        error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
         expected.each do |id|
           error_msg += "#{id}\n"
         end
