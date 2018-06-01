@@ -330,7 +330,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String, tag : Bool = false)
       if tag
         stack << "#{values[token.t_token_value]}/#{symbols[token.t_token_id]}"
       else
-      stack << values[token.t_token_value]
+        stack << values[token.t_token_value]
       end
     when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
       symbol = value.value
@@ -427,41 +427,32 @@ class String
   end
 end
 
-def parse(rules : String, input : String)
+def parse(rules : String, input : String, tag : Bool = false)
   grammar = metag_grammar
   stack = parse(grammar, rules)
   rules = stack_to_rules(stack)
 
-  stack = parse(rules, input)
+  stack = parse(rules, input, tag)
   return stack
 end
 
-# input = File.read("src/bnf/metag.bnf")
-# grammar = metag_grammar
-# stack = parse(grammar, input)
-# rules = stack_to_rules(stack)
+def compile_grammar(input)
+  grammar = metag_grammar
+  stack = parse(grammar, input)
+  rules = stack_to_rules(stack)
 
-# Extract rules (clumsily)
-# puts %(rules["L0"] = [)
-# rules["L0"].each { |a| print a, ",", "\n" }
-# puts "]"
-# puts ""
-# puts %(rules["G1"] = [)
-# rules["G1"].each { |a| print a, ",", "\n" }
-# puts "]"
+  # Extract rules (clumsily)
+  puts %(rules["L0"] = [)
+  rules["L0"].each { |a| print a, ",", "\n" }
+  puts "]"
+  puts ""
+  puts %(rules["G1"] = [)
+  rules["G1"].each { |a| print a, ",", "\n" }
+  puts "]"
+end
 
 grammar = File.read("src/bnf/english.bnf")
-input = File.read("src/sample.english")
-# input = <<-END_INPUT
-# How many is thirty-nine?
-# # How about fourty-five?
-# What about this book?
-# How about this book?
-# And this book?
-# Is he for real?
-# If I have five eggs, how many eggs do I have.
-# To be precomputed, a grammar must have one or more symbols.
-# END_INPUT
+# input = File.read("src/sample.english")
 
 # OptionParser.parse! do |parser|
 #   parser.banner = "Usage: marpa [arguments]"
@@ -469,13 +460,15 @@ input = File.read("src/sample.english")
 #   parser.on("-h", "--help", "Show this help") { puts parser }
 # end
 
-stack = parse(grammar, input)
+# print "Input sentence: "
+input = File.read("src/simple.english")
 
+stack = parse(grammar, input, tag = true)
 stack = stack.as(Array(RecArray))
 stack.each do |sentence|
   sentence = sentence.as(Array(RecArray))
-  # sentence = sentence.flatten.as(Array(String))
-  # sentence = sentence.join(" ")
+  sentence = sentence.flatten
+  sentence = sentence.join(" ")
 
   puts sentence
 end
