@@ -46,10 +46,10 @@ WHNP ::= WP
 
 CC  ~ /and|as/i
 DT  ~ /all|this|that|these|those|a|the/i
-IN  ~ /for|about|into|in|out|of|as/i
-JJ  ~ /full|good|kind|your|my/i
+IN  ~ /for|about|into|in|out|of|as|with/i
+JJ  ~ /any|full|good|kind|your|my/i
 MD  ~ /would/i
-NN  ~ /door|girl|something|idea|picture|yard|pencil|book|address|name|color|size|day|today|milk|question|mine|yours|plan/i
+NN  ~ /time|door|girl|something|idea|picture|yard|pencil|book|address|name|color|size|day|today|milk|question|mine|yours|plan/i
 NNS ~ /children|books|pencils|letters|cats|dogs|eggs/i
 PRP ~ /it|you|me|he|her|we|of|i/i
 RB  ~ /too|not|very|exactly|early/i
