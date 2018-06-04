@@ -1,6 +1,10 @@
 require "../../src/marpa.cr"
 require "option_parser"
 
+# Note: There is currently no way to access multiple parses of the given input,
+# or to indicate precedence in the grammar, so the parse may differ significantly
+# from that of something like http://nlp.stanford.edu:8080/parser/index.jsp
+
 grammar = File.read("english.bnf")
 input = File.read("sample.english")
 
