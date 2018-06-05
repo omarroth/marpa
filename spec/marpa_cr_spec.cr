@@ -31,10 +31,9 @@ describe Marpa do
 
     grammar = <<-END_BNF
     :start ::= S
-    S ::= <a1> || <a2> || <a3>
-    <a1> ~ 'a'
+    S ::= <a1> || <a2>
     <a2> ~ 'a'
-    <a3> ~ 'a'
+    <a1> ~ 'a'
     END_BNF
 
     stack = parser.parse(grammar, "a", true)
