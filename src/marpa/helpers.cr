@@ -3,6 +3,7 @@ module Marpa
     alias Rule = Hash(String, Array(String) | String)
     alias RecArray = Array(RecArray) | String
 
+    # Internal representation of the BNF language.
     def metag_grammar
       rules = Hash(String, Array(Rule)).new
 

@@ -3,6 +3,10 @@ require "./marpa/lib_marpa/*"
 
 module Marpa
   class Parser
+    # Parse input given NAIF rules.
+    # See `metag_grammar` for an example of this format,
+    # or [the original interface](https://metacpan.org/pod/distribution/Marpa-R2/pod/NAIF.pod) for
+    # information on  which this is based.
     def parse(rules : Hash(String, Array(Rule)), input : String, tag : Bool = false)
       config = uninitialized LibMarpa::MarpaConfig
       LibMarpa.marpa_c_init(pointerof(config))
@@ -335,6 +339,7 @@ module Marpa
       return stack
     end
 
+    # Convert the output of a succesful parse to NAIF.
     def stack_to_rules(stack)
       rules = {} of String => Array(Rule)
       rules["G1"] = [] of Rule
@@ -421,6 +426,10 @@ module Marpa
       return rules
     end
 
+    # Parse input given BNF rules.
+    # `parse` will output the resulting parse tree, notated here
+    # as 'stack'.
+    # 'tag' will output each node's value and type separated by "/". 
     def parse(rules : String, input : String, tag : Bool = false)
       grammar = metag_grammar
       stack = parse(grammar, rules)
