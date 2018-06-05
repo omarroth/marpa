@@ -16,9 +16,9 @@ OptionParser.parse! do |parser|
 end
 
 stack = parse(grammar, input, tag = true)
-stack = stack.as(Array(RecArray))
+stack = stack.as(Array)
 stack.each do |sentence|
-  sentence = sentence.as(Array(RecArray))
+  sentence = sentence.as(Array)
   sentence = sentence.flatten
   sentence = sentence.join(" ")
 

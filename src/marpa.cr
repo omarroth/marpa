@@ -340,9 +340,9 @@ module Marpa
       rules["G1"] = [] of Rule
       rules["L0"] = [] of Rule
 
-      stack = stack.as(Array(RecArray))
+      stack = stack.as(Array)
       stack.each do |rule|
-        rule = rule[0].as(Array(RecArray))
+        rule = rule[0].as(Array)
 
         lhs = rule[0]
         if lhs.is_a?(Array)
@@ -374,7 +374,7 @@ module Marpa
               quantified["lhs"] = lhs
               quantified["rhs"] = rhs
 
-              quantifier = rule[3].as(Array(RecArray))
+              quantifier = rule[3].as(Array)
               quantifier = quantifier.flatten
               quantifier = quantifier[0]
               if quantifier == "*"
