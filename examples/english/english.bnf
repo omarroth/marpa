@@ -9,10 +9,10 @@ TYPE ::= S
 | SBARQ
 | SQ
 
-S ::= NP
-| NP VP
+S ::=  NP VP
+|| VP
+|| NP
 | SBAR S
-| VP
 
 SBARQ ::= WHNP SQ
 
@@ -33,7 +33,7 @@ NP ::= DT
 
 VP ::= MD VP
 | TO VP
-| VB
+| VB NP
 | VBG
 | VBP RB S
 | VBP S
@@ -56,9 +56,9 @@ NNS ~ /children|books|pencils|letters|cats|dogs|eggs/i
 PRP ~ /it|you|me|he|her|we|of|i/i
 RB  ~ /too|not|very|exactly|early/i
 TO  ~ /to/i
-VB  ~ /like|eat|do|add|be|want|learn|like/i
+VB  ~ /like|eat|do|add|be|want|learn/i
 VBG ~ /going/i
-VBP ~ /are|have|suggest/i 
+VBP ~ /like|are|have|suggest/i
 VBZ ~ /jumps|is|'s/i
 WBD ~ /said/i
 WP  ~ /what|who|whom/i
