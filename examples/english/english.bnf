@@ -62,7 +62,6 @@ WBD ~ /said/i
 WP  ~ /what/i
 
 comma  ~ ','
-hyphen ~ '-'
 period ~ /\.|\?|\!/
 
 # Allow comments
@@ -71,6 +70,3 @@ period ~ /\.|\?|\!/
 
 :discard ~ whitespace
 whitespace ~ [\s]+
-
-# :discard ~ word
-word ~ /'?\w+/
