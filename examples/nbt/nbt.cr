@@ -4,9 +4,10 @@ require "zlib"
 
 # Parser for Minecraft's NBT format http://wiki.vg/NBT
 
-# This grammar cannot completely parse NBT because there is currently no support for
+# NOTE: This grammar cannot completely parse NBT because there is currently no support for
 # languages that have Hollerith constants (length-prefixed values).
-# For more information see http://jeffreykegler.github.io/Ocean-of-Awareness-blog/individual/2013/06/mixing-procedural.html
+# For more information on how to parse such a language see
+# http://jeffreykegler.github.io/Ocean-of-Awareness-blog/individual/2013/06/mixing-procedural.html
 
 grammar = File.read("nbt.bnf")
 # Handler for compression:
