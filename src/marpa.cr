@@ -447,4 +447,3 @@ def compile_grammar(input)
   rules["G1"].each { |a| print a, ",", "\n" }
   puts "]"
 end
-
