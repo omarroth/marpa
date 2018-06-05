@@ -227,7 +227,7 @@ def parse(rules : Hash(String, Array(Rule)), input : String, tag : Bool = false)
         col = position - last_newline
         row = input[0..position].count("\n") + 1
 
-        error_msg = "Lexing error at row #{row}, column #{col}, here:\n"
+        error_msg = "Lexing error at row #{row}, column #{col}, (position: #{position}) here:\n"
         error_msg += input[last_newline..position]
         error_msg += "\n"
         error_msg += " " * Math.max(col - 1, 0)
