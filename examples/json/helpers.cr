@@ -1,6 +1,10 @@
 # Alias identical to that used in the standard library
 alias Type = Nil | Bool | Int64 | Float64 | String | Array(Type) | Hash(String, Type)
 
+# TODO: Use tagged nodes to make these comparisons unnecessary.
+# node.is_a?(Array) should be written as node[1] == "array"
+# node[0]?.try &.== "{" should be written as node[1] == "object"
+# etc.
 def node_to_json(node)
   if node.is_a?(Array)
     if node[0]?.try &.== "["
