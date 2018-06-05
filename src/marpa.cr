@@ -123,7 +123,7 @@ module Marpa
 
           if error != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
             raise "Unable to set rank for #{lhs}, error: #{error}"
-      end
+          end
         end
       end
 
@@ -414,6 +414,8 @@ module Marpa
               end
 
               rules["G1"] << quantified
+            elsif rule[2].empty?
+              rules["G1"] << {"lhs" => lhs, "rhs" => [] of String}
             else
               # priority
 
@@ -424,9 +426,9 @@ module Marpa
               priorities.each do |priority|
                 alternatives = priority.as(Array)
 
-              alternatives.delete "|"
-              alternatives.each do |alternative|
-                alternative = alternative.as(Array)
+                alternatives.delete "|"
+                alternatives.each do |alternative|
+                  alternative = alternative.as(Array)
 
                   prioritized = {"lhs" => lhs, "rhs" => alternative.flatten}
                   if rank != 0

@@ -41,4 +41,19 @@ describe Marpa do
     stack.should eq ["a/<a1>"]
   end
 
+  it "tests nulled rules" do
+    parser = Marpa::Parser.new
+
+    grammar = <<-END_BNF
+    :start ::= S
+    S ::= 'a'
+    S ::= 
+    END_BNF
+
+    stack = parser.parse(grammar, "")
+    stack.should eq [] of String
+
+    stack = parser.parse(grammar, "a")
+    stack.should eq ["a"]
+  end
 end
