@@ -429,7 +429,7 @@ module Marpa
     # Parse input given BNF rules.
     # `parse` will output the resulting parse tree, notated here
     # as 'stack'.
-    # 'tag' will output each node's value and type separated by "/". 
+    # 'tag' will output each node's value and type separated by "/".
     def parse(rules : String, input : String, tag : Bool = false)
       grammar = metag_grammar
       stack = parse(grammar, rules)
