@@ -4,7 +4,7 @@ require "../../src/marpa"
 require "./helpers"
 
 grammar = File.read("json.bnf")
-input = %q([1,"abc\nd\"ef",-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+input = %q([1,"abc\nd\"ef",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
 
 OptionParser.parse! do |parser|
   parser.banner = "Usage: json [arguments]"
