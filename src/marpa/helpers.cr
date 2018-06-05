@@ -20,7 +20,7 @@ module Marpa
         {"lhs" => "<bracketed name string>", "rhs" => ["[\\s\\w]+"]},
         {"lhs" => "<single quoted string>", "rhs" => ["[']", "<string without single quote>", "[']"]},
         {"lhs" => "<string without single quote>", "rhs" => ["[^'\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]+"]},
-        {"lhs" => "<regex>", "rhs" => ["/\\/.*\\/\\w*/"]},
+        {"lhs" => "<regex>", "rhs" => ["/\\/.*\\/[imx]{0,3}/"]},
         {"lhs" => "<character class>", "rhs" => ["'['", "<cc elements>", "']'"]},
         {"lhs" => "<cc elements>", "rhs" => ["[^\\x5d\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]+"]},
         {"lhs" => "[:discard]", "rhs" => ["<hash comment>"]},
