@@ -1,12 +1,22 @@
-# marpa_cr
+# marpa
 
 TODO: Write a description here
 
 ## Installation
 
-TODO: Write installation instructions here
+Add this to your application's `shard.yml`:
+
+```yaml
+dependencies:
+  marpa:
+    github: omarroth/marpa
+```
 
 ## Usage
+
+```crystal
+require "marpa"
+```
 
 TODO: Write usage instructions here
 
@@ -16,7 +26,7 @@ TODO: Write development instructions here
 
 ## Contributing
 
-1. Fork it ( https://github.com/[your-github-name]/marpa_cr/fork )
+1. Fork it ( https://github.com/omarroth/marpa/fork )
 2. Create your feature branch (git checkout -b my-new-feature)
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)
@@ -24,4 +34,4 @@ TODO: Write development instructions here
 
 ## Contributors
 
-- [[your-github-name]](https://github.com/[your-github-name]) Omar Roth - creator, maintainer
+- [omarroth](https://github.com/omarroth) Omar Roth - creator, maintainer
