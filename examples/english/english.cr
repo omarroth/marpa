@@ -4,6 +4,7 @@ require "option_parser"
 # Note: There is currently no way to access multiple parses of the given input,
 # or to indicate precedence in the grammar, so the parse may differ significantly
 # from that of something like http://nlp.stanford.edu:8080/parser/index.jsp
+# This also means that it is difficult to add unknown words automagically.
 
 grammar = File.read("english.bnf")
 input = File.read("sample.english")
@@ -15,7 +16,8 @@ OptionParser.parse! do |parser|
   parser.on("-h", "--help", "Show this help") { puts parser }
 end
 
-stack = parse(grammar, input, tag = true)
+parser = Marpa::Parser.new
+stack = parser.parse(grammar, input, tag = true)
 stack = stack.as(Array)
 stack.each do |sentence|
   sentence = sentence.as(Array)
