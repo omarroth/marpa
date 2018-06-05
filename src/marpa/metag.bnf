@@ -5,13 +5,15 @@ statement ::= <start rule>
   | <discard rule>
 
 <start rule> ::= ':start' <op declare bnf> <single symbol>
-<priority rule> ::= lhs <op declare> alternatives
+<priority rule> ::= lhs <op declare> priorities
 <quantified rule> ::= lhs <op declare> <single symbol> quantifier <adverb list>
 <discard rule> ::= ':discard' <op declare match> <single symbol>
 
-<op declare> ::= <op declare bnf> | <op declare match>
-alternatives ::= rhs*
+priorities ::= alternatives+
+    separator => <op loosen> proper => 1
+alternatives ::= alternative+
     separator => <op equal priority> proper => 1
+alternative ::= rhs <adverb list>
 
 <adverb list> ::= <adverb item>*
 <adverb item> ::= <separator specification> 
@@ -37,9 +39,12 @@ symbol ::= <symbol name>
 :discard ~ whitespace
 whitespace ~ [\s]+
 
+<op declare> ::= <op declare bnf> | <op declare match>
+
 <op declare bnf> ~ '::='
 <op declare match> ~ '~'
 <op equal priority> ~ '|'
+<op loosen> ~ '||'
 quantifier ::= '*' | '+'
 
 boolean ~ [01]

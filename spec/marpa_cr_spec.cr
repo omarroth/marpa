@@ -25,4 +25,20 @@ describe Marpa do
 
     rules.should eq parser.metag_grammar
   end
+
+  it "tests precedence" do
+    parser = Marpa::Parser.new
+
+    grammar = <<-END_BNF
+    :start ::= S
+    S ::= <a1> || <a2> || <a3>
+    <a1> ~ 'a'
+    <a2> ~ 'a'
+    <a3> ~ 'a'
+    END_BNF
+
+    stack = parser.parse(grammar, "a", true)
+    stack.should eq ["a/<a1>"]
+  end
+
 end

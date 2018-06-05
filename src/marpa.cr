@@ -44,6 +44,8 @@ module Marpa
         separator = rule["separator"]?.try &.as(String)
         proper = rule["proper"]?.try &.as(String)
         action = rule["action"]?.try &.as(String)
+        rank = rule["rank"]?.try &.as(String).to_i
+        rank ||= 0
 
         # Handle start rules
         if lhs == "[:start]"
@@ -112,6 +114,16 @@ module Marpa
         if status < 0
           error = LibMarpa.marpa_g_error(grammar, p_error_string)
           raise "Unable to create rule for #{lhs}, error: #{error}"
+        end
+
+        if rank
+          LibMarpa.marpa_g_error_clear(grammar)
+          status = LibMarpa.marpa_g_rule_rank_set(grammar, status, rank)
+          error = LibMarpa.marpa_g_error(grammar, p_error_string)
+
+          if error != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
+            raise "Unable to set rank for #{lhs}, error: #{error}"
+      end
         end
       end
 
@@ -279,6 +291,7 @@ module Marpa
         e = LibMarpa.marpa_g_error(grammar, p_error_string)
         raise "Order complete: #{e}"
       end
+      LibMarpa.marpa_o_rank(order)
 
       tree = LibMarpa.marpa_t_new(order)
       if !tree
@@ -404,12 +417,26 @@ module Marpa
             else
               # priority
 
-              alternatives = rule[2].as(Array)
+              priorities = rule[2].as(Array)
+              rank = 0
+
+              priorities.delete "||"
+              priorities.each do |priority|
+                alternatives = priority.as(Array)
+
               alternatives.delete "|"
               alternatives.each do |alternative|
                 alternative = alternative.as(Array)
 
-                rules["G1"] << {"lhs" => lhs, "rhs" => alternative.flatten}
+                  prioritized = {"lhs" => lhs, "rhs" => alternative.flatten}
+                  if rank != 0
+                    prioritized["rank"] = "#{rank}"
+                  end
+
+                  rules["G1"] << prioritized
+                end
+
+                rank -= 1
               end
             end
           elsif op_declare == "~"
