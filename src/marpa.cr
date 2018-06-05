@@ -429,22 +429,5 @@ module Marpa
       stack = parse(rules, input, tag)
       return stack
     end
-
-    def compile_grammar(input)
-      grammar = metag_grammar
-      stack = parse(grammar, input)
-      rules = stack_to_rules(stack)
-
-      # Extract rules (clumsily)
-      # puts %(rules["L0"] = [)
-      # rules["L0"].each { |a| print a, ",", "\n" }
-      # puts "]"
-      # puts ""
-      # puts %(rules["G1"] = [)
-      # rules["G1"].each { |a| print a, ",", "\n" }
-      # puts "]"
-
-      return rules
-    end
   end
 end
