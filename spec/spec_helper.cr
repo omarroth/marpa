@@ -1,2 +1,4 @@
 require "spec"
-require "../src/marpa_cr"
+require "json"
+require "../src/marpa"
+require "../examples/json/helpers"
