@@ -44,22 +44,24 @@ VP ::= MD VP
 
 WHNP ::= WP
 
+# Penn Treebank tagset, for more information see
+# https://www.sketchengine.eu/penn-treebank-tagset/
 CC  ~ /and|as/i
-DT  ~ /all|this|that|these|those|a|the/i
-IN  ~ /for|about|into|in|out|of|as|with/i
-JJ  ~ /any|full|good|kind|your|my/i
-MD  ~ /would/i
-NN  ~ /time|door|girl|something|idea|picture|yard|pencil|book|address|name|color|size|day|today|milk|question|mine|yours|plan/i
+DT  ~ /all|this|that|these|those|a|an|the/i
+IN  ~ /like|over|for|about|into|in|out|of|as|with/i
+JJ  ~ /lazy|brown|quick|any|full|good|kind|your|my/i
+MD  ~ /can|could|might|may|would/i
+NN  ~ /dog|fox|time|door|girl|something|idea|picture|yard|pencil|book|address|name|color|size|day|today|milk|question|mine|yours|plan/i
 NNS ~ /children|books|pencils|letters|cats|dogs|eggs/i
 PRP ~ /it|you|me|he|her|we|of|i/i
 RB  ~ /too|not|very|exactly|early/i
 TO  ~ /to/i
-VB  ~ /eat|do|add|be|want|learn|like/i
+VB  ~ /like|eat|do|add|be|want|learn|like/i
 VBG ~ /going/i
-VBP ~ /are|have|suggest/i
-VBZ ~ /is|'s/i
+VBP ~ /are|have|suggest/i 
+VBZ ~ /jumps|is|'s/i
 WBD ~ /said/i
-WP  ~ /what/i
+WP  ~ /what|who|whom/i
 
 comma  ~ ','
 period ~ /\.|\?|\!/
