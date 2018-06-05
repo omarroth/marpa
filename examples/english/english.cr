@@ -13,7 +13,10 @@ OptionParser.parse! do |parser|
   parser.banner = "Usage: english [arguments]"
   parser.on("-i FILE", "--input=FILE", "Input file") { |file| input = File.read(file) }
   parser.on("-p STRING", "--puts=STRING", "Input string") { |string| input = string }
-  parser.on("-h", "--help", "Show this help") { puts parser }
+  parser.on("-h", "--help", "Show this help") do
+    puts parser
+    exit
+  end
 end
 
 parser = Marpa::Parser.new
