@@ -29,15 +29,28 @@ describe Marpa do
   it "tests precedence" do
     parser = Marpa::Parser.new
 
-    grammar = <<-END_BNF
-    :start ::= S
-    S ::= <a1> || <a2>
-    <a2> ~ 'a'
-    <a1> ~ 'a'
+    grammar = <<-'END_BNF'
+    :start ::= Script
+    Script ::= Expression+ separator => comma
+    comma ~ ','
+
+    Expression ::= Number
+      | Expression '*' Expression
+      || Expression '+' Expression
+
+    Number ~ [\d]+
+    
+    whitespace ~ [\s]+
+    :discard ~ whitespace
     END_BNF
 
-    stack = parser.parse(grammar, "a", true)
-    stack.should eq ["a/<a1>"]
+    # TODO: Update spec with actions to test result of expression
+    # `1 + 2 * 3 == 7`
+    stack = parser.parse(grammar, "1 + 1 * 1")
+    stack.should eq [[["1"], "+", [["1"], "*", ["1"]]]]
+
+    stack = parser.parse(grammar, "1 * 1 + 1")
+    stack.should eq [[[["1"], "*", ["1"]], "+", ["1"]]]
   end
 
   it "tests nulled rules" do
