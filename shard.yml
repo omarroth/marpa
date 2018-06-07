@@ -4,6 +4,9 @@ version: 0.1.0
 authors:
   - Omar Roth <omarroth@hotmail.com>
 
+description: |
+  A Crystal interface to the Marpa library.
+
 libraries:
   libmarpa: ~> 8.6.0
 
