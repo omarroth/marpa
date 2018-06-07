@@ -438,7 +438,7 @@ module Marpa
                   rules["G1"] << prioritized
                 end
 
-                rank -= 1
+                rank += 1
               end
             end
           elsif op_declare == "~"
