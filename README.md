@@ -1,6 +1,5 @@
 # marpa
-
-This library is an interface to [libmarpa](http://jeffreykegler.github.io/Marpa-web-site/).
+[![GitHub release](https://img.shields.io/github/release/omarroth/marpa.svg)](https://github.com/omarroth/marpa/releases)
 
 Marpa is a parsing algorithm.  
 From the [official Marpa website](http://jeffreykegler.github.io/Marpa-web-site/):
