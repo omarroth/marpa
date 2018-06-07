@@ -1,4 +1,4 @@
-require "../../src/marpa.cr"
+require "../../src/marpa"
 require "gzip"
 require "zlib"
 

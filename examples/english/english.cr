@@ -1,4 +1,4 @@
-require "../../src/marpa.cr"
+require "../../src/marpa"
 require "option_parser"
 
 # Note: There is currently no way to access multiple parses of the given input,
