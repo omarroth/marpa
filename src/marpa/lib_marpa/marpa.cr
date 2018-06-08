@@ -138,7 +138,7 @@ lib LibMarpa
   fun marpa_v_symbol_is_valued_set(v : MarpaValue, sym_id : MarpaSymbolId, status : LibC::Int) : LibC::Int
   fun marpa_v_unref(v : MarpaValue)
   fun marpa_v_valued_force(v : MarpaValue) : LibC::Int
-  fun marpa_version(version : LibC::Int*) : MarpaErrorCode
+  fun marpa_version(version : StaticArray(LibC::Int, 3)*) : MarpaErrorCode
 
   struct Marpa_Config
     t_is_ok : LibC::Int
