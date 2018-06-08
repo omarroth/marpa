@@ -169,13 +169,16 @@ module Marpa
 
             regex += body[0]
           else
-            if !tokens.has_key?(symbol)
-              # If we can't process a rule yet, come back 'round later
-              rules.delete(rule)
+            if tokens.has_key?(symbol)
+              regex += tokens[symbol].to_s
+            else
+              if rules["L0"][-1] == rule
+                raise "Could not process L0 rule for #{lhs}"
+              end
+
+              # Add rule to the end if we haven't seen a token yet.
               rules["L0"] << rule
               next
-            else
-              regex += tokens[symbol].to_s
             end
           end
         end
