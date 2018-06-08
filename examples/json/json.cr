@@ -25,4 +25,4 @@ reference = JSON.parse(input)
 # Note here that the generated json and reference are not of exactly the same type.
 # Because of this json == reference is false even though they are still represented
 # the same internally.
-puts "JSON parse is identical to that of the standard lib? #{json.to_s == reference.to_s}"
+puts json
