@@ -66,6 +66,12 @@ module Marpa
           proper = proper.try &.to_i
           proper ||= 1
 
+          if proper == 1
+            proper = LibMarpa::MARPA_PROPER_SEPARATION
+          else
+            proper = 0
+          end
+
           if separator
             if symbols.key?(separator)
               separator = symbols.key(separator)
@@ -86,9 +92,6 @@ module Marpa
           if status < 0
             error = LibMarpa.marpa_g_error(grammar, p_error_string)
             raise "Unable to create sequence for #{lhs}, error: #{error}"
-          else
-            rules["G1"].delete(rule)
-            rules["G1"].insert(status, rule)
           end
 
           next
