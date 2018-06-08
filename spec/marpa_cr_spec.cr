@@ -20,6 +20,7 @@ describe Marpa do
     parser = Marpa::Parser.new
 
     grammar = File.read("src/marpa/metag.bnf")
+
     stack = parser.parse(grammar, grammar)
     rules = parser.stack_to_rules(stack)
 
@@ -29,28 +30,15 @@ describe Marpa do
   it "tests precedence" do
     parser = Marpa::Parser.new
 
-    grammar = <<-'END_BNF'
-    :start ::= Script
-    Script ::= Expression+ separator => comma
-    comma ~ ','
+    grammar = File.read("examples/calculator/calculator.bnf")
 
-    Expression ::= Number
-      | Expression '*' Expression
-      || Expression '+' Expression
+    stack = parser.parse(grammar, "(10 + 4) - 6 * 3")
+    result = calculate(stack)
+    result.should eq -4
 
-    Number ~ [\d]+
-    
-    whitespace ~ [\s]+
-    :discard ~ whitespace
-    END_BNF
-
-    # TODO: Update spec with actions to test result of expression
-    # `1 + 2 * 3 == 7`
-    stack = parser.parse(grammar, "1 + 1 * 1")
-    stack.should eq [[["1"], "+", [["1"], "*", ["1"]]]]
-
-    stack = parser.parse(grammar, "1 * 1 + 1")
-    stack.should eq [[[["1"], "*", ["1"]], "+", ["1"]]]
+    stack = parser.parse(grammar, "3 * 5 + 1")
+    result = calculate(stack)
+    result.should eq 16
   end
 
   it "tests nulled rules" do

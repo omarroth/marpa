@@ -1,0 +1,14 @@
+# Grammar from https://metacpan.org/pod/distribution/Marpa-R2/pod/Semantics.pod
+:start ::= Expression
+Expression ::= Number
+| '(' Expression ')'
+|| Expression '**' Expression
+|| Expression '*' Expression
+| Expression '/' Expression
+|| Expression '+' Expression
+| Expression '-' Expression
+
+Number ~ [\d]+
+
+:discard ~ whitespace
+whitespace ~ [\s]+
