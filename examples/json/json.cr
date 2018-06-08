@@ -20,9 +20,4 @@ parser = Marpa::Parser.new
 stack = parser.parse(grammar, input)
 json = node_to_json(stack)
 
-reference = JSON.parse(input)
-
-# Note here that the generated json and reference are not of exactly the same type.
-# Because of this json == reference is false even though they are still represented
-# the same internally.
 puts json
