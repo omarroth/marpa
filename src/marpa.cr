@@ -7,7 +7,7 @@ module Marpa
     # See `metag_grammar` for an example of this format,
     # or [the original interface](https://metacpan.org/pod/distribution/Marpa-R2/pod/NAIF.pod) for
     # information on  which this is based.
-    def parse(rules : Hash(String, Array(Rule)), input : String, tag : Bool = false)
+    def parse(rules : Hash(String, Array(Rule)), input : String, actions : Actions = Actions.new)
       config = uninitialized LibMarpa::MarpaConfig
       LibMarpa.marpa_c_init(pointerof(config))
 
@@ -88,11 +88,14 @@ module Marpa
           end
           separator ||= -1
 
-          status = LibMarpa.marpa_g_sequence_new(grammar, symbols.key(lhs), symbols.key(rhs[0]), separator, min, proper)
-          if status < 0
+          rule_id = LibMarpa.marpa_g_sequence_new(grammar, symbols.key(lhs), symbols.key(rhs[0]), separator, min, proper)
+          if rule_id < 0
             error = LibMarpa.marpa_g_error(grammar, p_error_string)
             raise "Unable to create sequence for #{lhs}, error: #{error}"
           end
+
+          rules["G1"].delete(rule)
+          rules["G1"].insert(rule_id, rule)
 
           next
         end
@@ -113,15 +116,18 @@ module Marpa
           ids << symbols.key(symbol)
         end
 
-        status = LibMarpa.marpa_g_rule_new(grammar, symbols.key(lhs), ids, ids.size)
-        if status < 0
+        rule_id = LibMarpa.marpa_g_rule_new(grammar, symbols.key(lhs), ids, ids.size)
+        if rule_id < 0
           error = LibMarpa.marpa_g_error(grammar, p_error_string)
           raise "Unable to create rule for #{lhs}, error: #{error}"
         end
 
+        rules["G1"].delete(rule)
+        rules["G1"].insert(rule_id, rule)
+
         if rank
           LibMarpa.marpa_g_error_clear(grammar)
-          status = LibMarpa.marpa_g_rule_rank_set(grammar, status, rank)
+          status = LibMarpa.marpa_g_rule_rank_set(grammar, rule_id, rank)
           error = LibMarpa.marpa_g_error(grammar, p_error_string)
 
           if error != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
@@ -335,15 +341,15 @@ module Marpa
           context = stack[start..stop]
           stack.delete_at(start..stop)
 
+          if rules["G1"][rule_id]["action"]?
+            context = actions.call(rules["G1"][rule_id]["action"], context)
+          end
+
           stack << context
         when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
           token = value.value
 
-          if tag
-            stack << "#{values[token.t_token_value]}/#{symbols[token.t_token_id]}"
-          else
-            stack << values[token.t_token_value]
-          end
+          stack << values[token.t_token_value]
         when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
           symbol = value.value
 
@@ -435,8 +441,22 @@ module Marpa
                 alternatives.delete "|"
                 alternatives.each do |alternative|
                   alternative = alternative.as(Array)
+                  rhs = alternative[0].as(Array)
 
-                  prioritized = {"lhs" => lhs, "rhs" => alternative.flatten}
+                  prioritized = {"lhs" => lhs, "rhs" => rhs.flatten}
+
+                  adverbs = alternative[1].as(Array)
+                  adverbs.each do |adverb|
+                    adverb = adverb.as(Array)
+                    adverb = adverb.flatten
+                    adverb.delete "=>"
+
+                    name = adverb[0].as(String)
+                    value = adverb[1].as(String)
+
+                    prioritized[name] = value
+                  end
+
                   if rank != 0
                     prioritized["rank"] = "#{rank}"
                   end
@@ -465,13 +485,32 @@ module Marpa
     # `parse` will output the resulting parse tree, notated here
     # as 'stack'.
     # 'tag' will output each node's value and type separated by "/".
-    def parse(rules : String, input : String, tag : Bool = false)
+    def parse(rules : String, input : String, actions : Actions = Actions.new)
       grammar = metag_grammar
-      stack = parse(grammar, rules)
+      stack = parse(grammar, rules, actions)
       rules = stack_to_rules(stack)
 
-      stack = parse(rules, input, tag)
+      stack = parse(rules, input)
       return stack
+    end
+  end
+
+  class Actions
+    def call(name, context)
+      {% begin %}
+        case name
+        {% for method in @type.methods %}
+          when {{method.name.stringify}}
+            {% if method.name.stringify == "call" %}
+              raise %(Cannot recursively call function "call".)
+            {% else %}
+              return {{method.name}}(context)
+            {% end %}
+          {% end %}
+        else
+          raise %(Could not find action "#{name}")
+        end
+      {% end %}
     end
   end
 end

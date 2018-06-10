@@ -17,16 +17,18 @@ alternatives ::= alternative+
 alternative ::= rhs <adverb list>
 
 <adverb list> ::= <adverb item>*
-<adverb item> ::= <separator specification> 
+<adverb item> ::= action
+  | <separator specification>
   | <proper specification>
 
+action ::= 'action' '=>' <bare name>
 <separator specification> ::= 'separator' '=>' <single symbol>
 <proper specification> ::= 'proper' '=>' boolean
 
 lhs ::= <symbol name>
 rhs ::= <rhs primary>+
-<rhs primary> ::= <single symbol> 
-  | <single quoted string> 
+<rhs primary> ::= <single symbol>
+  | <single quoted string>
   | <parenthesized rhs primary list>
 <parenthesized rhs primary list> ::= '(' <rhs list> ')'
 <rhs list> ::= <rhs primary>+
