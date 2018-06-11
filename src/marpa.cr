@@ -60,6 +60,21 @@ module Marpa
         end
       end
 
+      encountered = lexer.keys.map { |symbol| symbols[symbol] }
+      encountered += rules.map { |k, v| symbols[v["lhs"]] }
+      encountered = symbols.values - encountered
+
+      if encountered.size > 0
+        encountered = encountered.map { |id| symbols.key(id) }
+        error_msg = "Symbols not defined:\n"
+
+        encountered.each do |id|
+          error_msg += "    #{id}\n"
+        end
+
+        raise error_msg
+      end
+
       p_error_string = String.new
       LibMarpa.marpa_g_error_clear(grammar)
       LibMarpa.marpa_g_precompute(grammar)
@@ -147,7 +162,7 @@ module Marpa
 
             error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
             expected.each do |id|
-              error_msg += "#{id}\n"
+              error_msg += "    #{id}\n"
             end
 
             raise error_msg
@@ -349,6 +364,7 @@ module Marpa
               end
             end
 
+            rule["lhs"] = lhs
             @rules[rule_id] = rule
           when ["~"]
             @tokens[lhs] = rhs
@@ -428,6 +444,7 @@ module Marpa
           end
         end
 
+        rule["lhs"] = lhs
         @rules[rule_id] = rule
       when ["~"]
         regex = Regex.new(rhs + quantifier)
@@ -453,11 +470,14 @@ module Marpa
       lhs = lhs[0]
       lhs_id = @symbols[lhs]
 
-      status = LibMarpa.marpa_g_rule_new(@grammar, lhs_id, [] of Int32, 0)
-      if status < 0
+      rule_id = LibMarpa.marpa_g_rule_new(@grammar, lhs_id, [] of Int32, 0)
+      if rule_id < 0
         raise "Could not create empty rule for #{lhs}"
       end
 
+      rule = {} of String => String
+      rule["lhs"] = lhs
+      @rules[rule_id] = rule
       ""
     end
 
