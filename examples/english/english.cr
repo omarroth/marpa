@@ -19,7 +19,7 @@ OptionParser.parse! do |parser|
 end
 
 parser = Marpa::Parser.new
-stack = parser.parse(grammar, input)
+stack = parser.parse(input, grammar)
 stack = stack.as(Array)
 stack.each do |sentence|
   sentence = sentence.as(Array)
