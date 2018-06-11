@@ -2,18 +2,17 @@ require "./spec_helper"
 
 describe Marpa do
   it "parses json" do
-    # parser = Marpa::Parser.new
+    grammar = File.read("examples/json/json.bnf")
+    input = %q([1,"abc\nd\"ef",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
 
-    # grammar = File.read("examples/json/json.bnf")
-    # input = %q([1,"abc\nd\"ef",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+    parser = Marpa::Parser.new
+    actions = JSON_Actions.new
+    stack = parser.parse(input, grammar, actions)
+    json = actions.json
 
-    # parser = Marpa::Parser.new
-    # stack = parser.parse(grammar, input)
-    # json = node_to_json(stack)
+    reference = JSON.parse(input)
 
-    # reference = JSON.parse(input)
-
-    # json.to_s.should eq reference.to_s
+    json.to_s.should eq reference.to_s
   end
 
   it "compares generated grammar with original" do
@@ -27,22 +26,20 @@ describe Marpa do
     grammar = Marpa::Builder.new
     parser.parse(input, meta_grammar, grammar)
 
-    # grammar.symbols.should eq meta_grammar.symbols
-    # grammar.rules.should eq meta_grammar.rules
+    grammar.symbols.should eq meta_grammar.symbols
+    grammar.rules.should eq meta_grammar.rules
   end
 
   it "tests precedence" do
     parser = Marpa::Parser.new
-
+    actions = Calculator.new
     grammar = File.read("examples/calculator/calculator.bnf")
 
-    stack = parser.parse("(10 + 4) - 6 * 3", grammar)
-    result = calculate(stack)
-    result.should eq -4
+    result = parser.parse("(10 + 4) - 6 * 3", grammar, actions)
+    result.should eq "-4"
 
-    stack = parser.parse("3 * 5 + 1", grammar)
-    result = calculate(stack)
-    result.should eq 16
+    result = parser.parse("3 ** 5 + 1", grammar, actions)
+    result.should eq "244"
   end
 
   it "tests nulled rules" do
