@@ -43,7 +43,7 @@ END_BNF
 
 input = "100 + 200"
 
-parser.parse(grammar, input) # => ["100", "+", "200"]
+parser.parse(input, grammar) # => ["100", "+", "200"]
 ```
 
 See `examples/` for a more thorough demonstration of this interface's capabilities, including a parser for JSON.
