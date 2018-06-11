@@ -1,10 +1,9 @@
-require "json"
 require "option_parser"
 require "../../src/marpa"
 require "./helpers"
 
 grammar = File.read("json.bnf")
-input = %q([1,"abc\nd\"ef",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+input = %q([1,"abc\nd\"ef\ufea1",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
 
 OptionParser.parse! do |parser|
   parser.banner = "Usage: json [arguments]"
@@ -17,7 +16,8 @@ OptionParser.parse! do |parser|
 end
 
 parser = Marpa::Parser.new
-stack = parser.parse(grammar, input)
-json = node_to_json(stack)
+actions = JSON_Actions.new
+stack = parser.parse(input, grammar, actions)
+json = actions.json
 
 puts json

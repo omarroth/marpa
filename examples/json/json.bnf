@@ -1,20 +1,28 @@
+# Adapted from https://gist.github.com/pstuifzand/4447349
 :start ::= json
-json ::= value
+json ::= object | array
 
-object ::= '{' members '}'
+object ::= '{' members '}' action => do_object
 members ::= pair* proper => 1 separator => comma
 pair ::= string ':' value
 
-value ::= string | object | number | array | true | false | null
+value ::= string
+  | object
+  | number action => do_number
+  | array
+  | true action => do_true
+  | false action => do_false
+  | null action => do_null
 
-array ::= '[' elements ']'
+array ::= '[' elements ']' action => do_array
 elements ::= value* proper => 1 separator => comma
 
 comma ~ ','
 
-# TODO: Split regex into bite-sized pieces
-string ~ /"([^"\\]*|\\["\\bfnrt\/]|\\u[0-9a-f]{4})*"/
-number ~ /-?(?=[1-9]|0(?!\d))\d+(\.\d+)?([eE][+-]?\d+)?/
+string ::= '"' in_string '"' action => do_string
+in_string ~ /([^"\\]|\\[\'\"\\\/bftnrt]|\\u[a-zA-Z0-9])+/
+
+number ~ /-?([\d]+)(\.\d+)?([eE][+-]?\d+)?/
 
 true ~ 'true'
 false ~ 'false'
