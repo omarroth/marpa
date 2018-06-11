@@ -1,12 +1,12 @@
 # Grammar from https://metacpan.org/pod/distribution/Marpa-R2/pod/Semantics.pod
 :start ::= Expression
-Expression ::= Number
-| '(' Expression ')'
-|| Expression '**' Expression
-|| Expression '*' Expression
-| Expression '/' Expression
-|| Expression '+' Expression
-| Expression '-' Expression
+Expression ::= Number action => reduce
+| '(' Expression ')' action => paren
+|| Expression '**' Expression action => exponentiate
+|| Expression '*' Expression action => multiply
+| Expression '/' Expression action => divide
+|| Expression '+' Expression action => add
+| Expression '-' Expression action => subtract
 
 Number ~ [\d]+
 
