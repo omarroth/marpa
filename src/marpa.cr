@@ -29,7 +29,7 @@ module Marpa
       discards = builder.discards
 
       lexer = {} of String => Regex
-      until tokens.empty?
+      5.times do
         tokens.each do |key, value|
           case value
           when Regex
@@ -58,6 +58,15 @@ module Marpa
             end
           end
         end
+      end
+
+      if !tokens.empty?
+        error_msg = "Could not form L0 rules:\n"
+        tokens.each do |key, value|
+          error_msg += "    #{key}\n"
+        end
+
+        raise error_msg
       end
 
       encountered = lexer.keys.map { |symbol| symbols[symbol] }
