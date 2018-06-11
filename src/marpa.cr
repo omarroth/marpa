@@ -3,198 +3,64 @@ require "./marpa/lib_marpa/*"
 
 module Marpa
   class Parser
-    # Parse input given NAIF rules.
-    # See `metag_grammar` for an example of this format,
-    # or [the original interface](https://metacpan.org/pod/distribution/Marpa-R2/pod/NAIF.pod) for
-    # information on  which this is based.
-    def parse(rules : Hash(String, Array(Rule)), input : String, actions : Actions = Actions.new)
-      config = uninitialized LibMarpa::MarpaConfig
-      LibMarpa.marpa_c_init(pointerof(config))
+    # Parse `input` given `grammar` in BNF format.
+    # Accepts optional `actions` that can be used to perform semantics
+    # on given rules.
+    # On successful parse, returns the parse tree
+    def parse(input : String, grammar : String, actions : Actions = Actions.new)
+      meta_grammar = Builder.new
+      meta_grammar = build_meta_grammar(meta_grammar)
 
-      grammar = LibMarpa.marpa_g_new(pointerof(config))
-      LibMarpa.marpa_g_force_valued(grammar)
+      builder = Builder.new
+      parse(grammar, meta_grammar, builder)
+
+      return parse(input, builder, actions)
+    end
+
+    # Internal method used to parse the given input given computed grammar,
+    # Notated here as `builder`
+    def parse(input : String, builder : Builder, actions : Actions = Actions.new)
+      grammar = builder.grammar
+      symbols = builder.symbols
+      rules = builder.rules
+
+      tokens = builder.tokens
+      elements = builder.elements
+      discards = builder.discards
+
+      lexer = {} of String => Regex
+      until tokens.empty?
+        tokens.each do |key, value|
+          case value
+          when Regex
+            lexer[key] = value
+            tokens.delete(key)
+          when Array
+            regex = ""
+            options = Regex::Options::None
+
+            value.each do |element|
+              if lexer[element]?
+                options = options | lexer[element].options
+                regex += lexer[element].source
+              elsif elements[element]?
+                options = options | elements[element].options
+                regex += elements[element].source
+              else
+                regex = ""
+                break
+              end
+            end
+
+            if regex != ""
+              lexer[key] = Regex.new(regex, options)
+              tokens.delete(key)
+            end
+          end
+        end
+      end
 
       p_error_string = String.new
-
-      symbols = {} of Int32 => String
-
-      (rules["L0"] + rules["G1"]).each do |rule|
-        lhs = rule["lhs"].as(String)
-
-        if lhs == "[:start]" || lhs == "[:discard]"
-          next
-        end
-
-        if !symbols.key?(lhs)
-          id = LibMarpa.marpa_g_symbol_new(grammar)
-
-          if id < 0
-            raise "Could not create symbol ID for #{lhs}"
-          end
-
-          symbols[id] = lhs
-        end
-      end
-
-      rules["G1"].each do |rule|
-        lhs = rule["lhs"].as(String)
-        rhs = rule["rhs"].as(Array(String))
-
-        min = rule["min"]?.try &.as(String)
-        separator = rule["separator"]?.try &.as(String)
-        proper = rule["proper"]?.try &.as(String)
-        action = rule["action"]?.try &.as(String)
-        rank = rule["rank"]?.try &.as(String).to_i
-        rank ||= 0
-
-        # Handle start rules
-        if lhs == "[:start]"
-          status = LibMarpa.marpa_g_start_symbol(grammar)
-          if status > 0
-            puts "Previous start symbol was '#{symbols[status]}', setting new start symbol to '#{rhs[0]}'."
-          end
-
-          LibMarpa.marpa_g_start_symbol_set(grammar, symbols.key(rhs[0]))
-          next
-        end
-
-        # Handle quantified rules
-        if min || proper || separator
-          min = min.try &.to_i
-          min ||= 0
-
-          proper = proper.try &.to_i
-          proper ||= 1
-
-          if proper == 1
-            proper = LibMarpa::MARPA_PROPER_SEPARATION
-          else
-            proper = 0
-          end
-
-          if separator
-            if symbols.key?(separator)
-              separator = symbols.key(separator)
-            else
-              id = LibMarpa.marpa_g_symbol_new(grammar)
-
-              if id < 0
-                raise "Could not create symbol ID for #{separator}"
-              end
-
-              symbols[id] = separator
-              separator = id
-            end
-          end
-          separator ||= -1
-
-          rule_id = LibMarpa.marpa_g_sequence_new(grammar, symbols.key(lhs), symbols.key(rhs[0]), separator, min, proper)
-          if rule_id < 0
-            error = LibMarpa.marpa_g_error(grammar, p_error_string)
-            raise "Unable to create sequence for #{lhs}, error: #{error}"
-          end
-
-          rules["G1"].delete(rule)
-          rules["G1"].insert(rule_id, rule)
-
-          next
-        end
-
-        ids = [] of Int32
-        rhs.each do |symbol|
-          if symbol.starts_with?("'") && !symbols.key?(symbol)
-            id = LibMarpa.marpa_g_symbol_new(grammar)
-
-            if id < 0
-              raise "Could not create symbol ID for #{lhs}"
-            end
-
-            rules["L0"] << {"lhs" => symbol, "rhs" => [Regex.escape(symbol[1..-2])]}
-            symbols[id] = symbol
-          end
-
-          ids << symbols.key(symbol)
-        end
-
-        rule_id = LibMarpa.marpa_g_rule_new(grammar, symbols.key(lhs), ids, ids.size)
-        if rule_id < 0
-          error = LibMarpa.marpa_g_error(grammar, p_error_string)
-          raise "Unable to create rule for #{lhs}, error: #{error}"
-        end
-
-        rules["G1"].delete(rule)
-        rules["G1"].insert(rule_id, rule)
-
-        if rank
-          LibMarpa.marpa_g_error_clear(grammar)
-          status = LibMarpa.marpa_g_rule_rank_set(grammar, rule_id, rank)
-          error = LibMarpa.marpa_g_error(grammar, p_error_string)
-
-          if error != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-            raise "Unable to set rank for #{lhs}, error: #{error}"
-          end
-        end
-      end
-
-      tokens = {} of String => Regex
-      discard = [] of String
-
-      rules["L0"].each do |rule|
-        lhs = rule["lhs"].as(String)
-        rhs = rule["rhs"].as(Array(String))
-
-        if lhs == "[:discard]"
-          discard << rhs[0]
-          next
-        end
-
-        if lhs.starts_with? "'"
-          tokens[lhs] = Regex.new(rhs[0])
-          next
-        end
-
-        regex = ""
-        options = Regex::Options::None
-
-        rhs.each do |symbol|
-          case symbol
-          when .starts_with? "'"
-            regex += Regex.escape(symbol[1..-2])
-          when .starts_with? "["
-            regex += symbol
-          when .starts_with? "/"
-            body = symbol[1..-1].rpartition("/")
-            right_side = body[2]
-
-            if right_side.includes? "i"
-              options = options | Regex::Options::IGNORE_CASE
-            end
-            if right_side.includes? "m"
-              options = options | Regex::Options::MULTILINE
-            end
-            if right_side.includes? "x"
-              options = options | Regex::Options::EXTENDED
-            end
-
-            regex += body[0]
-          else
-            if tokens.has_key?(symbol)
-              regex += tokens[symbol].to_s
-            else
-              if rules["L0"][-1] == rule
-                raise "Could not process L0 rule for #{lhs}"
-              end
-
-              # Add rule to the end if we haven't seen a token yet.
-              rules["L0"] << rule
-              next
-            end
-          end
-        end
-
-        tokens[lhs] = Regex.new(regex, options)
-      end
-
       LibMarpa.marpa_g_error_clear(grammar)
       LibMarpa.marpa_g_precompute(grammar)
       status = LibMarpa.marpa_g_error(grammar, p_error_string)
@@ -213,32 +79,35 @@ module Marpa
         slice = buffer.to_slice[0, size]
         expected = [] of String
         slice.each do |id|
-          expected << symbols[id]
+          expected << symbols.key(id)
+        end
+
+        #   # CHECK THIS
+        if expected.empty?
+          raise "Recognizer is satisfied but there's still more input"
         end
 
         matches = [] of {String, String}
-        if expected.empty?
-          break
-        else
-          expected.each do |terminal|
-            md = tokens[terminal].match(input, position)
-            if md && md.begin == position
-              matches << {md[0], terminal}
-            end
+        expected.each do |terminal|
+          md = lexer[terminal].match(input, position)
+          if md && md.begin == position
+            matches << {md[0], terminal}
           end
         end
 
         if matches.empty?
-          discard_token = false
-          discard.each do |terminal|
-            md = input.match(tokens[terminal], position)
+          discard = false
+          discards.each do |terminal|
+            md = input.match(lexer[terminal], position)
             if md && md.begin == position
-              position += md[0].size
-              discard_token = true
+              matches << {md[0], terminal}
+              discard = true
             end
           end
 
-          if discard_token
+          if discard
+            matches.sort_by! { |a, b| a.size }.reverse!
+            position += matches[0][0].size
             next
           else
             last_newline = input[0..position].rindex("\n")
@@ -267,7 +136,7 @@ module Marpa
         values[position + 1] = matches[0][0]
 
         matches.select { |a, b| a.size == matches[0][0].size }.each do |match|
-          status = LibMarpa.marpa_r_alternative(recce, symbols.key(match[1]), position + 1, 1)
+          status = LibMarpa.marpa_r_alternative(recce, symbols[match[1]], position + 1, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
             last_newline = input[0..position].rindex("\n")
@@ -287,8 +156,8 @@ module Marpa
 
         status = LibMarpa.marpa_r_earleme_complete(recce)
         if status < 0
-          e = LibMarpa.marpa_g_error(grammar, p_error_string)
-          raise "Earleme complete: #{e}"
+          error = LibMarpa.marpa_g_error(grammar, p_error_string)
+          raise "Earleme complete: #{error}"
         end
       end
 
@@ -341,11 +210,16 @@ module Marpa
           context = stack[start..stop]
           stack.delete_at(start..stop)
 
-          if rules["G1"][rule_id]["action"]?
-            context = actions.call(rules["G1"][rule_id]["action"], context)
-          end
+          action = rules[rule_id]["action"]?
+          action ||= "default"
 
-          stack << context
+          context = actions.call(action, context)
+
+          if context
+            stack << context
+          else
+            stack << [] of String
+          end
         when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
           token = value.value
 
@@ -363,154 +237,293 @@ module Marpa
 
       return stack
     end
-
-    # Convert the output of a succesful parse to NAIF.
-    def stack_to_rules(stack)
-      rules = {} of String => Array(Rule)
-      rules["G1"] = [] of Rule
-      rules["L0"] = [] of Rule
-
-      stack = stack.as(Array)
-      stack.each do |rule|
-        rule = rule[0].as(Array)
-
-        lhs = rule[0]
-        if lhs.is_a?(Array)
-          lhs = lhs.flatten
-          lhs = lhs[0]
-        end
-
-        op_declare = rule[1]
-        if op_declare.is_a?(Array)
-          op_declare = op_declare.flatten
-          op_declare = op_declare[0]
-        end
-
-        rhs = rule[2].as(Array)
-        rhs = rhs.flatten
-        rhs = rhs.as(Array(String))
-
-        case lhs
-        when ":start"
-          rules["G1"] << {"lhs" => "[:start]", "rhs" => rhs}
-        when ":discard"
-          rules["L0"] << {"lhs" => "[:discard]", "rhs" => rhs}
-        else
-          if op_declare == "::="
-            if rule[3]?
-              # quantified
-
-              quantified = Rule.new
-              quantified["lhs"] = lhs
-              quantified["rhs"] = rhs
-
-              quantifier = rule[3].as(Array)
-              quantifier = quantifier.flatten
-              quantifier = quantifier[0]
-              if quantifier == "*"
-                quantified["min"] = "0"
-              elsif quantifier == "+"
-                quantified["min"] = "1"
-              end
-
-              adverbs = rule[4].as(Array)
-              adverbs.each do |adverb|
-                adverb = adverb.as(Array)
-                adverb = adverb.flatten
-                adverb.delete "=>"
-
-                name = adverb[0].as(String)
-                value = adverb[1].as(String)
-
-                quantified[name] = value
-              end
-
-              rules["G1"] << quantified
-            elsif rule[2].empty?
-              rules["G1"] << {"lhs" => lhs, "rhs" => [] of String}
-            else
-              # priority
-
-              priorities = rule[2].as(Array)
-              rank = 0
-
-              priorities.delete "||"
-              priorities.each do |priority|
-                alternatives = priority.as(Array)
-
-                alternatives.delete "|"
-                alternatives.each do |alternative|
-                  alternative = alternative.as(Array)
-                  rhs = alternative[0].as(Array)
-
-                  prioritized = {"lhs" => lhs, "rhs" => rhs.flatten}
-
-                  adverbs = alternative[1].as(Array)
-                  adverbs.each do |adverb|
-                    adverb = adverb.as(Array)
-                    adverb = adverb.flatten
-                    adverb.delete "=>"
-
-                    name = adverb[0].as(String)
-                    value = adverb[1].as(String)
-
-                    prioritized[name] = value
-                  end
-
-                  if rank != 0
-                    prioritized["rank"] = "#{rank}"
-                  end
-
-                  rules["G1"] << prioritized
-                end
-
-                rank += 1
-              end
-            end
-          elsif op_declare == "~"
-            if rule[3]?
-              quantifier = rule[3].as(Array).flatten[0]
-              rhs[0] = rhs[0] + quantifier
-            end
-
-            rules["L0"] << {"lhs" => lhs, "rhs" => rhs}
-          end
-        end
-      end
-
-      return rules
-    end
-
-    # Parse input given BNF rules.
-    # `parse` will output the resulting parse tree, notated here
-    # as 'stack'.
-    # 'tag' will output each node's value and type separated by "/".
-    def parse(rules : String, input : String, actions : Actions = Actions.new)
-      grammar = metag_grammar
-      stack = parse(grammar, rules, actions)
-      rules = stack_to_rules(stack)
-
-      stack = parse(rules, input)
-      return stack
-    end
   end
 
+  # Skeleton class for Marpa actions
   class Actions
+    # Class macro that converts a name and given context to a function call to
+    # a method with that name
     def call(name, context)
       {% begin %}
         case name
-        {% for method in @type.methods %}
+        when "default"
+          context
+        {% for method in @type.methods.select { |method| method.args.size == 1 } %}
           when {{method.name.stringify}}
-            {% if method.name.stringify == "call" %}
-              raise %(Cannot recursively call function "call".)
-            {% else %}
-              return {{method.name}}(context)
-            {% end %}
+            return {{method.name}}(context)
           {% end %}
         else
           raise %(Could not find action "#{name}")
         end
       {% end %}
+    end
+  end
+
+  class Builder < Marpa::Actions
+    property grammar
+    property symbols
+    property rules
+    property tokens
+    property elements
+    property discards
+
+    def initialize
+      @config = uninitialized LibMarpa::MarpaConfig
+      LibMarpa.marpa_c_init(pointerof(@config))
+
+      @grammar = LibMarpa.marpa_g_new(pointerof(@config))
+      LibMarpa.marpa_g_force_valued(@grammar)
+
+      @rules = {} of Int32 => Hash(String, String)
+
+      @symbols = {} of String => Int32
+
+      @tokens = {} of String => Array(String) | Regex
+      @elements = {} of String => Regex
+      @discards = [] of String
+    end
+
+    def start_rule(context)
+      symbol = context[2].as(Array)
+      symbol = symbol.flatten
+      symbol = symbol[0]
+
+      symbol_id = @symbols[symbol]
+      status = LibMarpa.marpa_g_start_symbol(@grammar)
+
+      if status > -1
+        puts "Previous start symbol was '#{@symbols.key(status)}', setting new start symbol to '#{symbol}'."
+      end
+
+      LibMarpa.marpa_g_start_symbol_set(@grammar, symbol_id)
+
+      ""
+    end
+
+    def priority_rule(context)
+      lhs = context[0].as(Array)
+      lhs = lhs.flatten
+      lhs = lhs[0]
+      priorities = context[2].as(Array)
+      rank = 0
+
+      priorities.delete "||"
+      priorities.each do |priority|
+        alternatives = priority.as(Array)
+
+        alternatives.delete "|"
+        alternatives.each do |alternative|
+          rhs = alternative[0].as(Array)
+          rhs = rhs.flatten
+          adverbs = alternative[1].as(Array)
+
+          case context[1]
+          when ["::="]
+            lhs_id = @symbols[lhs]
+            rhs_ids = rhs.map { |symbol| @symbols[symbol] }
+
+            rule = {} of String => String
+
+            adverbs.each do |adverb|
+              adverb = adverb.as(Array).flatten
+
+              case adverb[0]
+              when "action"
+                rule["action"] = adverb[2]
+              end
+            end
+
+            rule_id = LibMarpa.marpa_g_rule_new(@grammar, lhs_id, rhs_ids, rhs_ids.size)
+            if rule_id < 0
+              error = LibMarpa.marpa_g_error(@grammar, out p_error_string)
+              raise "Unable to create rule for #{lhs}, error: #{error}"
+            end
+
+            if rank != 0
+              LibMarpa.marpa_g_error_clear(@grammar)
+              LibMarpa.marpa_g_rule_rank_set(@grammar, rule_id, rank)
+              error = LibMarpa.marpa_g_error(@grammar, p_error_string)
+
+              if error != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
+                raise "Unable to set rank for #{lhs}, error: #{error}"
+              end
+            end
+
+            @rules[rule_id] = rule
+          when ["~"]
+            @tokens[lhs] = rhs
+          end
+        end
+
+        rank += 1
+      end
+
+      ""
+    end
+
+    def quantified_rule(context)
+      lhs = context[0].as(Array)
+      lhs = lhs.flatten
+      lhs = lhs[0]
+
+      op_declare = context[1]
+
+      rhs = context[2].as(Array)
+      rhs = rhs.flatten
+      rhs = rhs[0]
+
+      quantifier = context[3].as(Array)
+      quantifier = quantifier.flatten
+      quantifier = quantifier[0]
+
+      case op_declare
+      when ["::="]
+        lhs_id = @symbols[lhs]
+        rhs_id = @symbols[rhs]
+
+        case quantifier
+        when "+"
+          min = 1
+        when "*"
+          min = 0
+        else
+          raise "Rule for #{lhs} doesn't have correct quantifier"
+        end
+
+        adverbs = context[4].as(Array)
+
+        separator = -1
+        proper = LibMarpa::MARPA_KEEP_SEPARATION
+        rank = 0
+        rule = {} of String => String
+
+        adverbs.each do |adverb|
+          adverb = adverb.as(Array).flatten
+
+          case adverb[0]
+          when "separator"
+            separator = @symbols[adverb[2]]
+          when "proper"
+            if adverb[2] == "1"
+              proper = LibMarpa::MARPA_PROPER_SEPARATION
+            end
+          when "action"
+            rule["action"] = adverb[2]
+          end
+        end
+
+        rule_id = LibMarpa.marpa_g_sequence_new(@grammar, lhs_id, rhs_id, separator, min, proper)
+        if rule_id < 0
+          error = LibMarpa.marpa_g_error(@grammar, out p_error_string)
+          raise "Unable to create sequence for #{lhs}, error: #{error}"
+        end
+
+        if rank != 0
+          LibMarpa.marpa_g_error_clear(@grammar)
+          LibMarpa.marpa_g_rule_rank_set(@grammar, rule_id, rank)
+          error = LibMarpa.marpa_g_error(@grammar, p_error_string)
+
+          if error != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
+            raise "Unable to set rank for #{lhs}, error: #{error}"
+          end
+        end
+
+        @rules[rule_id] = rule
+      when ["~"]
+        regex = Regex.new(rhs + quantifier)
+        @tokens[lhs] = regex
+      end
+
+      ""
+    end
+
+    def discard_rule(context)
+      symbol = context[2].as(Array)
+      symbol = symbol.flatten
+      symbol = symbol[0]
+
+      @discards << symbol
+
+      ""
+    end
+
+    def empty_rule(context)
+      lhs = context[0].as(Array)
+      lhs = lhs.flatten
+      lhs = lhs[0]
+      lhs_id = @symbols[lhs]
+
+      status = LibMarpa.marpa_g_rule_new(@grammar, lhs_id, [] of Int32, 0)
+      if status < 0
+        raise "Could not create empty rule for #{lhs}"
+      end
+
+      ""
+    end
+
+    def create_symbol(context)
+      symbol = context[0].as(Array)
+      symbol = symbol.flatten
+      symbol = symbol[0]
+
+      if !@symbols[symbol]?
+        id = LibMarpa.marpa_g_symbol_new(@grammar)
+        if id < 0
+          raise "Could not create symbol ID for #{symbol}"
+        end
+
+        @symbols[symbol] = id
+      end
+
+      context
+    end
+
+    def create_literal(context)
+      string = context[0].as(String)
+      regex = Regex.escape(string)
+      if !@tokens[string]?
+        @tokens[string] = Regex.new(regex[1..-2])
+
+        id = LibMarpa.marpa_g_symbol_new(@grammar)
+        if id < 0
+          raise "Could not create symbol ID for #{string}"
+        end
+
+        @symbols[string] = id
+      end
+
+      context
+    end
+
+    def create_character_class(context)
+      character_class = context[0].as(String)
+      @elements[character_class] = Regex.new(character_class)
+      context
+    end
+
+    def create_regex(context)
+      regex = context[0].as(String)
+      body, slash, flags = regex.rpartition("/")
+
+      body = body[1..-1]
+      flags = flags.split("")
+
+      options = Regex::Options::None
+      flags.each do |flag|
+        case flag
+        when "i"
+          options = options | Regex::Options::IGNORE_CASE
+        when "m"
+          options = options | Regex::Options::MULTILINE
+        when "x"
+          options = options | Regex::Options::EXTENDED
+        end
+      end
+
+      @elements[body] = Regex.new(body, options)
+      context = body
+
+      context
     end
   end
 end

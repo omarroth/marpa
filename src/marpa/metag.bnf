@@ -1,14 +1,16 @@
 :start ::= statements
 statements ::= statement+
 statement ::= <start rule>
-  | <priority rule> | <quantified rule>
-  | <discard rule>  | <empty rule>
+  | <priority rule>
+  | <quantified rule>
+  | <discard rule>
+  | <empty rule>
 
-<start rule> ::= ':start' <op declare bnf> <single symbol>
-<priority rule> ::= lhs <op declare> priorities
-<quantified rule> ::= lhs <op declare> <single symbol> quantifier <adverb list>
-<discard rule> ::= ':discard' <op declare match> <single symbol>
-<empty rule> ::= lhs <op declare> <adverb list>
+<start rule> ::= ':start' <op declare bnf> <single symbol> action => start_rule
+<priority rule> ::= lhs <op declare> priorities action => priority_rule
+<quantified rule> ::= lhs <op declare> <single symbol> quantifier <adverb list> action => quantified_rule
+<discard rule> ::= ':discard' <op declare match> <single symbol> action => discard_rule
+<empty rule> ::= lhs <op declare> <adverb list> action => empty_rule
 
 priorities ::= alternatives+
     separator => <op loosen> proper => 1
@@ -21,21 +23,23 @@ alternative ::= rhs <adverb list>
   | <separator specification>
   | <proper specification>
 
-action ::= 'action' '=>' <bare name>
+action ::= 'action' '=>' <action name>
+<action name> ~ [\w]+
 <separator specification> ::= 'separator' '=>' <single symbol>
 <proper specification> ::= 'proper' '=>' boolean
 
-lhs ::= <symbol name>
+lhs ::= symbol
 rhs ::= <rhs primary>+
 <rhs primary> ::= <single symbol>
-  | <single quoted string>
+  | <single quoted string> action => create_literal
   | <parenthesized rhs primary list>
 <parenthesized rhs primary list> ::= '(' <rhs list> ')'
 <rhs list> ::= <rhs primary>+
+
 <single symbol> ::= symbol
-  | <character class>
-  | <regex>
-symbol ::= <symbol name>
+  | <character class> action => create_character_class
+  | <regex> action => create_regex
+symbol ::= <symbol name> action => create_symbol
 <symbol name> ::= <bare name>
   | <bracketed name>
 

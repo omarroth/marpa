@@ -1,75 +1,182 @@
 module Marpa
   class Parser
-    alias Rule = Hash(String, Array(String) | String)
-    alias RecArray = Array(RecArray) | String
+    alias RecArray = String | Array(RecArray)
 
-    # Internal representation of the BNF language.
-    def metag_grammar
-      rules = Hash(String, Array(Rule)).new
+    # Build up state given list
+    def build_meta_grammar(actions)
+      actions.create_symbol([["statements"]])
+      actions.start_rule([":start", "::=", [[["statements"]]]])
+      actions.create_symbol([["statements"]])
+      actions.create_symbol([["statement"]])
+      actions.quantified_rule([[[["statements"]]], ["::="], [[["statement"]]], ["+"], [] of String])
+      actions.create_symbol([["statement"]])
+      actions.create_symbol([["<start rule>"]])
+      actions.create_symbol([["<priority rule>"]])
+      actions.create_symbol([["<quantified rule>"]])
+      actions.create_symbol([["<discard rule>"]])
+      actions.create_symbol([["<empty rule>"]])
+      actions.priority_rule([[[["statement"]]], ["::="], [[[[[[[["<start rule>"]]]]], [] of String], "|", [[[[[["<priority rule>"]]]]], [] of String], "|", [[[[[["<quantified rule>"]]]]], [] of String], "|", [[[[[["<discard rule>"]]]]], [] of String], "|", [[[[[["<empty rule>"]]]]], [] of String]]]])
+      actions.create_symbol([["<start rule>"]])
+      actions.create_literal(["':start'"])
+      actions.create_symbol([["<op declare bnf>"]])
+      actions.create_symbol([["<single symbol>"]])
+      actions.priority_rule([[[["<start rule>"]]], ["::="], [[[[["':start'"], [[[["<op declare bnf>"]]]], [[[["<single symbol>"]]]]], [[["action", "=>", "start_rule"]]]]]]])
+      actions.create_symbol([["<priority rule>"]])
+      actions.create_symbol([["lhs"]])
+      actions.create_symbol([["<op declare>"]])
+      actions.create_symbol([["priorities"]])
+      actions.priority_rule([[[["<priority rule>"]]], ["::="], [[[[[[[["lhs"]]]], [[[["<op declare>"]]]], [[[["priorities"]]]]], [[["action", "=>", "priority_rule"]]]]]]])
+      actions.create_symbol([["<quantified rule>"]])
+      actions.create_symbol([["lhs"]])
+      actions.create_symbol([["<op declare>"]])
+      actions.create_symbol([["<single symbol>"]])
+      actions.create_symbol([["quantifier"]])
+      actions.create_symbol([["<adverb list>"]])
+      actions.priority_rule([[[["<quantified rule>"]]], ["::="], [[[[[[[["lhs"]]]], [[[["<op declare>"]]]], [[[["<single symbol>"]]]], [[[["quantifier"]]]], [[[["<adverb list>"]]]]], [[["action", "=>", "quantified_rule"]]]]]]])
+      actions.create_symbol([["<discard rule>"]])
+      actions.create_literal(["':discard'"])
+      actions.create_symbol([["<op declare match>"]])
+      actions.create_symbol([["<single symbol>"]])
+      actions.priority_rule([[[["<discard rule>"]]], ["::="], [[[[["':discard'"], [[[["<op declare match>"]]]], [[[["<single symbol>"]]]]], [[["action", "=>", "discard_rule"]]]]]]])
+      actions.create_symbol([["<empty rule>"]])
+      actions.create_symbol([["lhs"]])
+      actions.create_symbol([["<op declare>"]])
+      actions.create_symbol([["<adverb list>"]])
+      actions.priority_rule([[[["<empty rule>"]]], ["::="], [[[[[[[["lhs"]]]], [[[["<op declare>"]]]], [[[["<adverb list>"]]]]], [[["action", "=>", "empty_rule"]]]]]]])
+      actions.create_symbol([["priorities"]])
+      actions.create_symbol([["alternatives"]])
+      actions.create_symbol([["<op loosen>"]])
+      actions.quantified_rule([[[["priorities"]]], ["::="], [[["alternatives"]]], ["+"], [[["separator", "=>", [[["<op loosen>"]]]]], [["proper", "=>", "1"]]]])
+      actions.create_symbol([["alternatives"]])
+      actions.create_symbol([["alternative"]])
+      actions.create_symbol([["<op equal priority>"]])
+      actions.quantified_rule([[[["alternatives"]]], ["::="], [[["alternative"]]], ["+"], [[["separator", "=>", [[["<op equal priority>"]]]]], [["proper", "=>", "1"]]]])
+      actions.create_symbol([["alternative"]])
+      actions.create_symbol([["rhs"]])
+      actions.create_symbol([["<adverb list>"]])
+      actions.priority_rule([[[["alternative"]]], ["::="], [[[[[[[["rhs"]]]], [[[["<adverb list>"]]]]], [] of String]]]])
+      actions.create_symbol([["<adverb list>"]])
+      actions.create_symbol([["<adverb item>"]])
+      actions.quantified_rule([[[["<adverb list>"]]], ["::="], [[["<adverb item>"]]], ["*"], [] of String])
+      actions.create_symbol([["<adverb item>"]])
+      actions.create_symbol([["action"]])
+      actions.create_symbol([["<separator specification>"]])
+      actions.create_symbol([["<proper specification>"]])
+      actions.priority_rule([[[["<adverb item>"]]], ["::="], [[[[[[[["action"]]]]], [] of String], "|", [[[[[["<separator specification>"]]]]], [] of String], "|", [[[[[["<proper specification>"]]]]], [] of String]]]])
+      actions.create_symbol([["action"]])
+      actions.create_literal(["'action'"])
+      actions.create_literal(["'=>'"])
+      actions.create_symbol([["<action name>"]])
+      actions.priority_rule([[[["action"]]], ["::="], [[[[["'action'"], ["'=>'"], [[[["<action name>"]]]]], [] of String]]]])
+      actions.create_symbol([["<action name>"]])
+      actions.create_character_class(["[\\w]"])
+      actions.quantified_rule([[[["<action name>"]]], ["~"], ["[\\w]"], ["+"], [] of String])
+      actions.create_symbol([["<separator specification>"]])
+      actions.create_literal(["'separator'"])
+      actions.create_literal(["'=>'"])
+      actions.create_symbol([["<single symbol>"]])
+      actions.priority_rule([[[["<separator specification>"]]], ["::="], [[[[["'separator'"], ["'=>'"], [[[["<single symbol>"]]]]], [] of String]]]])
+      actions.create_symbol([["<proper specification>"]])
+      actions.create_literal(["'proper'"])
+      actions.create_literal(["'=>'"])
+      actions.create_symbol([["boolean"]])
+      actions.priority_rule([[[["<proper specification>"]]], ["::="], [[[[["'proper'"], ["'=>'"], [[[["boolean"]]]]], [] of String]]]])
+      actions.create_symbol([["lhs"]])
+      actions.create_symbol([["symbol"]])
+      actions.priority_rule([[[["lhs"]]], ["::="], [[[[[[[["symbol"]]]]], [] of String]]]])
+      actions.create_symbol([["rhs"]])
+      actions.create_symbol([["<rhs primary>"]])
+      actions.quantified_rule([[[["rhs"]]], ["::="], [[["<rhs primary>"]]], ["+"], [] of String])
+      actions.create_symbol([["<rhs primary>"]])
+      actions.create_symbol([["<single symbol>"]])
+      actions.create_symbol([["<single quoted string>"]])
+      actions.create_symbol([["<parenthesized rhs primary list>"]])
+      actions.priority_rule([[[["<rhs primary>"]]], ["::="], [[[[[[[["<single symbol>"]]]]], [] of String], "|", [[[[[["<single quoted string>"]]]]], [[["action", "=>", "create_literal"]]]], "|", [[[[[["<parenthesized rhs primary list>"]]]]], [] of String]]]])
+      actions.create_symbol([["<parenthesized rhs primary list>"]])
+      actions.create_literal(["'('"])
+      actions.create_symbol([["<rhs list>"]])
+      actions.create_literal(["')'"])
+      actions.priority_rule([[[["<parenthesized rhs primary list>"]]], ["::="], [[[[["'('"], [[[["<rhs list>"]]]], ["')'"]], [] of String]]]])
+      actions.create_symbol([["<rhs list>"]])
+      actions.create_symbol([["<rhs primary>"]])
+      actions.quantified_rule([[[["<rhs list>"]]], ["::="], [[["<rhs primary>"]]], ["+"], [] of String])
+      actions.create_symbol([["<single symbol>"]])
+      actions.create_symbol([["symbol"]])
+      actions.create_symbol([["<character class>"]])
+      actions.create_symbol([["<regex>"]])
+      actions.priority_rule([[[["<single symbol>"]]], ["::="], [[[[[[[["symbol"]]]]], [] of String], "|", [[[[[["<character class>"]]]]], [[["action", "=>", "create_character_class"]]]], "|", [[[[[["<regex>"]]]]], [[["action", "=>", "create_regex"]]]]]]])
+      actions.create_symbol([["symbol"]])
+      actions.create_symbol([["<symbol name>"]])
+      actions.priority_rule([[[["symbol"]]], ["::="], [[[[[[[["<symbol name>"]]]]], [[["action", "=>", "create_symbol"]]]]]]])
+      actions.create_symbol([["<symbol name>"]])
+      actions.create_symbol([["<bare name>"]])
+      actions.create_symbol([["<bracketed name>"]])
+      actions.priority_rule([[[["<symbol name>"]]], ["::="], [[[[[[[["<bare name>"]]]]], [] of String], "|", [[[[[["<bracketed name>"]]]]], [] of String]]]])
+      actions.create_symbol([["whitespace"]])
+      actions.discard_rule([":discard", "~", [[["whitespace"]]]])
+      actions.create_symbol([["whitespace"]])
+      actions.create_character_class(["[\\s]"])
+      actions.quantified_rule([[[["whitespace"]]], ["~"], ["[\\s]"], ["+"], [] of String])
+      actions.create_symbol([["<op declare>"]])
+      actions.create_symbol([["<op declare bnf>"]])
+      actions.create_symbol([["<op declare match>"]])
+      actions.priority_rule([[[["<op declare>"]]], ["::="], [[[[[[[["<op declare bnf>"]]]]], [] of String], "|", [[[[[["<op declare match>"]]]]], [] of String]]]])
+      actions.create_symbol([["<op declare bnf>"]])
+      actions.create_literal(["'::='"])
+      actions.priority_rule([[[["<op declare bnf>"]]], ["~"], [[[[["'::='"]], [] of String]]]])
+      actions.create_symbol([["<op declare match>"]])
+      actions.create_literal(["'~'"])
+      actions.priority_rule([[[["<op declare match>"]]], ["~"], [[[[["'~'"]], [] of String]]]])
+      actions.create_symbol([["<op equal priority>"]])
+      actions.create_literal(["'|'"])
+      actions.priority_rule([[[["<op equal priority>"]]], ["~"], [[[[["'|'"]], [] of String]]]])
+      actions.create_symbol([["<op loosen>"]])
+      actions.create_literal(["'||'"])
+      actions.priority_rule([[[["<op loosen>"]]], ["~"], [[[[["'||'"]], [] of String]]]])
+      actions.create_symbol([["quantifier"]])
+      actions.create_literal(["'*'"])
+      actions.create_literal(["'+'"])
+      actions.priority_rule([[[["quantifier"]]], ["::="], [[[[["'*'"]], [] of String], "|", [[["'+'"]], [] of String]]]])
+      actions.create_symbol([["boolean"]])
+      actions.create_character_class(["[01]"])
+      actions.priority_rule([[[["boolean"]]], ["~"], [[[[[["[01]"]]], [] of String]]]])
+      actions.create_symbol([["<bare name>"]])
+      actions.create_character_class(["[\\w]"])
+      actions.quantified_rule([[[["<bare name>"]]], ["~"], ["[\\w]"], ["+"], [] of String])
+      actions.create_symbol([["<bracketed name>"]])
+      actions.create_literal(["'<'"])
+      actions.create_symbol([["<bracketed name string>"]])
+      actions.create_literal(["'>'"])
+      actions.priority_rule([[[["<bracketed name>"]]], ["~"], [[[[["'<'"], [[[["<bracketed name string>"]]]], ["'>'"]], [] of String]]]])
+      actions.create_symbol([["<bracketed name string>"]])
+      actions.create_character_class(["[\\s\\w]"])
+      actions.quantified_rule([[[["<bracketed name string>"]]], ["~"], ["[\\s\\w]"], ["+"], [] of String])
+      actions.create_symbol([["<single quoted string>"]])
+      actions.create_character_class(["[']"])
+      actions.create_symbol([["<string without single quote>"]])
+      actions.create_character_class(["[']"])
+      actions.priority_rule([[[["<single quoted string>"]]], ["~"], [[[[[["[']"]], [[[["<string without single quote>"]]]], [["[']"]]], [] of String]]]])
+      actions.create_symbol([["<string without single quote>"]])
+      actions.create_character_class(["[^'\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]"])
+      actions.quantified_rule([[[["<string without single quote>"]]], ["~"], ["[^'\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]"], ["+"], [] of String])
+      actions.create_symbol([["<regex>"]])
+      actions.create_regex(["/\\/.*\\/[imx]{0,3}/"])
+      actions.priority_rule([[[["<regex>"]]], ["~"], [[[[["\\/.*\\/[imx]{0,3}"]], [] of String]]]])
+      actions.create_symbol([["<character class>"]])
+      actions.create_literal(["'['"])
+      actions.create_symbol([["<cc elements>"]])
+      actions.create_literal(["']'"])
+      actions.priority_rule([[[["<character class>"]]], ["~"], [[[[["'['"], [[[["<cc elements>"]]]], ["']'"]], [] of String]]]])
+      actions.create_symbol([["<cc elements>"]])
+      actions.create_character_class(["[^\\x5d\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]"])
+      actions.quantified_rule([[[["<cc elements>"]]], ["~"], ["[^\\x5d\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]"], ["+"], [] of String])
+      actions.create_symbol([["<hash comment>"]])
+      actions.discard_rule([":discard", "~", [[["<hash comment>"]]]])
+      actions.create_symbol([["<hash comment>"]])
+      actions.create_regex(["/#[^\\n]*/"])
+      actions.priority_rule([[[["<hash comment>"]]], ["~"], [[[[["#[^\\n]*"]], [] of String]]]])
 
-      rules["L0"] = [
-        {"lhs" => "[:discard]", "rhs" => ["whitespace"]},
-        {"lhs" => "whitespace", "rhs" => ["[\\s]+"]},
-        {"lhs" => "<op declare bnf>", "rhs" => ["'::='"]},
-        {"lhs" => "<op declare match>", "rhs" => ["'~'"]},
-        {"lhs" => "<op equal priority>", "rhs" => ["'|'"]},
-        {"lhs" => "<op loosen>", "rhs" => ["'||'"]},
-        {"lhs" => "boolean", "rhs" => ["[01]"]},
-        {"lhs" => "<bare name>", "rhs" => ["[\\w]+"]},
-        {"lhs" => "<bracketed name>", "rhs" => ["'<'", "<bracketed name string>", "'>'"]},
-        {"lhs" => "<bracketed name string>", "rhs" => ["[\\s\\w]+"]},
-        {"lhs" => "<single quoted string>", "rhs" => ["[']", "<string without single quote>", "[']"]},
-        {"lhs" => "<string without single quote>", "rhs" => ["[^'\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]+"]},
-        {"lhs" => "<regex>", "rhs" => ["/\\/.*\\/[imx]{0,3}/"]},
-        {"lhs" => "<character class>", "rhs" => ["'['", "<cc elements>", "']'"]},
-        {"lhs" => "<cc elements>", "rhs" => ["[^\\x5d\\x0A\\x0B\\x0C\\x0D\\x{0085}\\x{2028}\\x{2029}]+"]},
-        {"lhs" => "[:discard]", "rhs" => ["<hash comment>"]},
-        {"lhs" => "<hash comment>", "rhs" => ["/#[^\\n]*/"]},
-      ]
-
-      rules["G1"] = [
-        {"lhs" => "[:start]", "rhs" => ["statements"]},
-        {"lhs" => "statements", "rhs" => ["statement"], "min" => "1"},
-        {"lhs" => "statement", "rhs" => ["<start rule>"]},
-        {"lhs" => "statement", "rhs" => ["<priority rule>"]},
-        {"lhs" => "statement", "rhs" => ["<quantified rule>"]},
-        {"lhs" => "statement", "rhs" => ["<discard rule>"]},
-        {"lhs" => "statement", "rhs" => ["<empty rule>"]},
-        {"lhs" => "<start rule>", "rhs" => ["':start'", "<op declare bnf>", "<single symbol>"]},
-        {"lhs" => "<priority rule>", "rhs" => ["lhs", "<op declare>", "priorities"]},
-        {"lhs" => "<quantified rule>", "rhs" => ["lhs", "<op declare>", "<single symbol>", "quantifier", "<adverb list>"]},
-        {"lhs" => "<discard rule>", "rhs" => ["':discard'", "<op declare match>", "<single symbol>"]},
-        {"lhs" => "<empty rule>", "rhs" => ["lhs", "<op declare>", "<adverb list>"]},
-        {"lhs" => "priorities", "rhs" => ["alternatives"], "min" => "1", "separator" => "<op loosen>", "proper" => "1"},
-        {"lhs" => "alternatives", "rhs" => ["alternative"], "min" => "1", "separator" => "<op equal priority>", "proper" => "1"},
-        {"lhs" => "alternative", "rhs" => ["rhs", "<adverb list>"]},
-        {"lhs" => "<adverb list>", "rhs" => ["<adverb item>"], "min" => "0"},
-        {"lhs" => "<adverb item>", "rhs" => ["action"]},
-        {"lhs" => "<adverb item>", "rhs" => ["<separator specification>"]},
-        {"lhs" => "<adverb item>", "rhs" => ["<proper specification>"]},
-        {"lhs" => "action", "rhs" => ["'action'", "'=>'", "<bare name>"]},
-        {"lhs" => "<separator specification>", "rhs" => ["'separator'", "'=>'", "<single symbol>"]},
-        {"lhs" => "<proper specification>", "rhs" => ["'proper'", "'=>'", "boolean"]},
-        {"lhs" => "lhs", "rhs" => ["<symbol name>"]},
-        {"lhs" => "rhs", "rhs" => ["<rhs primary>"], "min" => "1"},
-        {"lhs" => "<rhs primary>", "rhs" => ["<single symbol>"]},
-        {"lhs" => "<rhs primary>", "rhs" => ["<single quoted string>"]},
-        {"lhs" => "<rhs primary>", "rhs" => ["<parenthesized rhs primary list>"]},
-        {"lhs" => "<parenthesized rhs primary list>", "rhs" => ["'('", "<rhs list>", "')'"]},
-        {"lhs" => "<rhs list>", "rhs" => ["<rhs primary>"], "min" => "1"},
-        {"lhs" => "<single symbol>", "rhs" => ["symbol"]},
-        {"lhs" => "<single symbol>", "rhs" => ["<character class>"]},
-        {"lhs" => "<single symbol>", "rhs" => ["<regex>"]},
-        {"lhs" => "symbol", "rhs" => ["<symbol name>"]},
-        {"lhs" => "<symbol name>", "rhs" => ["<bare name>"]},
-        {"lhs" => "<symbol name>", "rhs" => ["<bracketed name>"]},
-        {"lhs" => "<op declare>", "rhs" => ["<op declare bnf>"]},
-        {"lhs" => "<op declare>", "rhs" => ["<op declare match>"]},
-        {"lhs" => "quantifier", "rhs" => ["'*'"]},
-        {"lhs" => "quantifier", "rhs" => ["'+'"]},
-      ]
-
-      return rules
+      return actions
     end
   end
 end
