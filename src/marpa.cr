@@ -21,60 +21,19 @@ module Marpa
     # Notated here as `builder`
     def parse(input : String, builder : Builder, actions : Actions = Actions.new)
       grammar = builder.grammar
+
       symbols = builder.symbols
       rules = builder.rules
 
-      tokens = builder.tokens
-      elements = builder.elements
+      lexer = builder.lexer
       discards = builder.discards
-
-      lexer = {} of String => Regex
-      5.times do
-        tokens.each do |key, value|
-          case value
-          when Regex
-            lexer[key] = value
-            tokens.delete(key)
-          when Array
-            regex = ""
-            options = Regex::Options::None
-
-            value.each do |element|
-              if lexer[element]?
-                options = options | lexer[element].options
-                regex += lexer[element].source
-              elsif elements[element]?
-                options = options | elements[element].options
-                regex += elements[element].source
-              else
-                regex = ""
-                break
-              end
-            end
-
-            if regex != ""
-              lexer[key] = Regex.new(regex, options)
-              tokens.delete(key)
-            end
-          end
-        end
-      end
-
-      if !tokens.empty?
-        error_msg = "Could not form L0 rules:\n"
-        tokens.each do |key, value|
-          error_msg += "    #{key}\n"
-        end
-
-        raise error_msg
-      end
 
       encountered = lexer.keys.map { |symbol| symbols[symbol] }
       encountered += rules.map { |k, v| symbols[v["lhs"]] }
       encountered = symbols.values - encountered
 
       if encountered.size > 0
-        encountered = encountered.map { |id| symbols.key(id) }
+        encountered = encountered.map { |id| symbols.key_for(id) }
         error_msg = "Symbols not defined:\n"
 
         encountered.each do |id|
@@ -103,12 +62,11 @@ module Marpa
         slice = buffer.to_slice[0, size]
         expected = [] of String
         slice.each do |id|
-          expected << symbols.key(id)
+          expected << symbols.key_for(id)
         end
 
-        #   # CHECK THIS
         if expected.empty?
-          raise "Recognizer is satisfied but there's still more input"
+          break
         end
 
         matches = [] of {String, String}
@@ -307,6 +265,51 @@ module Marpa
       @discards = [] of String
     end
 
+    def lexer
+      lexer = {} of String => Regex
+      5.times do
+        @tokens.each do |key, value|
+          case value
+          when Regex
+            lexer[key] = value
+            tokens.delete(key)
+          when Array
+            regex = ""
+            options = Regex::Options::None
+
+            value.each do |element|
+              if lexer[element]?
+                options = options | lexer[element].options
+                regex += lexer[element].source
+              elsif elements[element]?
+                options = options | elements[element].options
+                regex += elements[element].source
+              else
+                regex = ""
+                break
+              end
+            end
+
+            if regex != ""
+              lexer[key] = Regex.new(regex, options)
+              tokens.delete(key)
+            end
+          end
+        end
+      end
+
+      if !tokens.empty?
+        error_msg = "Could not form L0 rules:\n"
+        @tokens.each do |key, value|
+          error_msg += "    #{key}\n"
+        end
+
+        raise error_msg
+      end
+
+      return lexer
+    end
+
     def start_rule(context)
       symbol = context[2].as(Array)
       symbol = symbol.flatten
@@ -316,7 +319,7 @@ module Marpa
       status = LibMarpa.marpa_g_start_symbol(@grammar)
 
       if status > -1
-        puts "Previous start symbol was '#{@symbols.key(status)}', setting new start symbol to '#{symbol}'."
+        puts "Previous start symbol was '#{@symbols.key_for(status)}', setting new start symbol to '#{symbol}'."
       end
 
       LibMarpa.marpa_g_start_symbol_set(@grammar, symbol_id)
