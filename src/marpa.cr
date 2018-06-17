@@ -59,14 +59,14 @@ module Marpa
       until position == input.size
         size = LibMarpa.marpa_r_terminals_expected(recce, buffer)
 
+        if size == 0
+          raise "Parse exhausted after #{position} characters"
+        end
+
         slice = buffer.to_slice[0, size]
         expected = [] of String
         slice.each do |id|
           expected << symbols.key_for(id)
-        end
-
-        if expected.empty?
-          break
         end
 
         matches = [] of {String, String}
