@@ -200,7 +200,7 @@ module Marpa
           if context
             stack << context
           else
-            stack << [] of String
+            stack << [] of RecArray
           end
         when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
           token = value.value
@@ -228,12 +228,16 @@ module Marpa
     def call(name, context)
       {% begin %}
         case name
+          {% for method in @type.methods.select { |method| method.args.size == 1 } %}
+        when {{method.name.stringify}}
+        return {{method.name}}(context)
+        {% end %}
+
+        {% if !@type.has_method? :default %}
         when "default"
-          context
-        {% for method in @type.methods.select { |method| method.args.size == 1 } %}
-          when {{method.name.stringify}}
-            return {{method.name}}(context)
-          {% end %}
+            return context
+        {% end %}
+
         else
           raise %(Could not find action "#{name}")
         end
