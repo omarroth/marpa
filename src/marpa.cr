@@ -1,5 +1,4 @@
 require "./marpa/*"
-require "./marpa/lib_marpa/*"
 
 module Marpa
   class Parser
