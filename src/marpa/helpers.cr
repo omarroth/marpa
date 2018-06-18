@@ -2,7 +2,6 @@ module Marpa
   class Parser
     alias RecArray = String | Array(RecArray)
 
-    # Build up state given list
     def build_meta_grammar(actions)
       actions.create_symbol([["statements"]])
       actions.start_rule([":start", "::=", [[["statements"]]]])
