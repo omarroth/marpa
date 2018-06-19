@@ -22,11 +22,13 @@ alternative ::= rhs <adverb list>
 <adverb item> ::= action
   | <separator specification>
   | <proper specification>
+  | <rank specification>
 
 action ::= 'action' '=>' <action name>
 <action name> ~ [\w]+
 <separator specification> ::= 'separator' '=>' <single symbol>
 <proper specification> ::= 'proper' '=>' boolean
+<rank specification> ::= 'rank' '=>' digit
 
 lhs ::= symbol
 rhs ::= <rhs primary>+
@@ -55,6 +57,7 @@ whitespace ~ [\s]+
 quantifier ::= '*' | '+'
 
 boolean ~ [01]
+digit ~ [\d]+
 
 <bare name> ~ [\w]+
 <bracketed name> ~ '<' <bracketed name string> '>'

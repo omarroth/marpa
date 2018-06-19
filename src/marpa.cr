@@ -346,6 +346,7 @@ module Marpa
           rhs = alternative[0].as(Array)
           rhs = rhs.flatten
           adverbs = alternative[1].as(Array)
+          alternative_rank = rank
 
           case context[1]
           when ["::="]
@@ -360,6 +361,8 @@ module Marpa
               case adverb[0]
               when "action"
                 rule["action"] = adverb[2]
+              when "rank"
+                alternative_rank = adverb[2].to_i
               end
             end
 
@@ -369,7 +372,7 @@ module Marpa
               raise "Unable to create rule for #{lhs}, error: #{error}"
             end
 
-            if rank != 0
+            if alternative_rank != 0
               LibMarpa.marpa_g_error_clear(@grammar)
               LibMarpa.marpa_g_rule_rank_set(@grammar, rule_id, rank)
               error = LibMarpa.marpa_g_error(@grammar, p_error_string)
@@ -440,6 +443,8 @@ module Marpa
             end
           when "action"
             rule["action"] = adverb[2]
+          when "rank"
+            rank = adverb[2].to_i
           end
         end
 
