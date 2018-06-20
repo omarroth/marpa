@@ -5,12 +5,14 @@ statement ::= <start rule>
   | <quantified rule>
   | <discard rule>
   | <empty rule>
+  | <lexeme rule>
 
 <start rule> ::= ':start' <op declare bnf> <single symbol> action => start_rule
 <priority rule> ::= lhs <op declare> priorities action => priority_rule
 <quantified rule> ::= lhs <op declare> <single symbol> quantifier <adverb list> action => quantified_rule
 <discard rule> ::= ':discard' <op declare match> <single symbol> action => discard_rule
 <empty rule> ::= lhs <op declare> <adverb list> action => empty_rule
+<lexeme rule> ::= ':lexeme' <op declare match> symbol <adverb list> action => lexeme_rule
 
 priorities ::= alternatives+
     separator => <op loosen> proper => 1
@@ -23,12 +25,15 @@ alternative ::= rhs <adverb list>
   | <separator specification>
   | <proper specification>
   | <rank specification>
+  | <pause specification>
+  | <event specification>
 
-action ::= 'action' '=>' <action name>
-<action name> ~ [\w]+
+action ::= 'action' '=>' <name>
 <separator specification> ::= 'separator' '=>' <single symbol>
 <proper specification> ::= 'proper' '=>' boolean
 <rank specification> ::= 'rank' '=>' digit
+<pause specification> ::= 'pause' '=>' <before or after>
+<event specification> ::= 'event' '=>' <name>
 
 lhs ::= symbol
 rhs ::= <rhs primary>+
@@ -56,8 +61,10 @@ whitespace ~ [\s]+
 <op loosen> ~ '||'
 quantifier ::= '*' | '+'
 
+<name> ~ [\w]+
 boolean ~ [01]
 digit ~ [\d]+
+<before or after> ::= 'before' | 'after'
 
 <bare name> ~ [\w]+
 <bracketed name> ~ '<' <bracketed name string> '>'

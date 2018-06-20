@@ -6,22 +6,23 @@ module Marpa
     # Accepts optional `actions` that can be used to perform semantics
     # on given rules.
     # On successful parse, returns the parse tree
-    def parse(input : String, grammar : String, actions : Actions = Actions.new)
+    def parse(input : String, grammar : String, actions : Actions = Actions.new, events : Events = Events.new)
       meta_grammar = Builder.new
       meta_grammar = build_meta_grammar(meta_grammar)
 
       builder = Builder.new
       parse(grammar, meta_grammar, builder)
 
-      return parse(input, builder, actions)
+      return parse(input, builder, actions, events)
     end
 
     # Internal method used to parse the given input given computed grammar,
     # Notated here as `builder`
-    def parse(input : String, builder : Builder, actions : Actions = Actions.new)
+    def parse(input : String, builder : Builder, actions : Actions = Actions.new, events : Events = Events.new)
       grammar = builder.grammar
 
       symbols = builder.symbols
+      symbol_events = builder.symbol_events
       rules = builder.rules
 
       lexer = builder.lexer
@@ -55,6 +56,7 @@ module Marpa
       position = 0
       values = {} of Int32 => String
       buffer = uninitialized Int32[64]
+      event = uninitialized LibMarpa::MarpaEvent
       until position == input.size
         size = LibMarpa.marpa_r_terminals_expected(recce, buffer)
 
@@ -73,6 +75,27 @@ module Marpa
           md = lexer[terminal].match(input, position)
           if md && md.begin == position
             matches << {md[0], terminal}
+          end
+        end
+
+        event_count = LibMarpa.marpa_g_event_count(grammar)
+        if event_count > 0
+          event_count.times do |i|
+            event_type = LibMarpa.marpa_g_event(grammar, pointerof(event), i)
+            value = event.t_value
+
+            case event_type
+            when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_COMPLETED
+              event_name = symbol_events["completions"][value]
+            when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_PREDICTED
+              event_name = symbol_events["predictions"][value]
+            end
+
+            match = events.call(event_name, {input, position, 0})
+
+            if match
+              matches << {match.as(String), symbols.key_for(value)}
+            end
           end
         end
 
@@ -116,7 +139,20 @@ module Marpa
         position += matches[0][0].size
         values[position + 1] = matches[0][0]
 
-        matches.select { |a, b| a.size == matches[0][0].size }.each do |match|
+        matches.select! { |a, b| a.size == matches[0][0].size }
+
+        # L0 symbols don't trigger completion events, so we do it here
+        completions = matches.select { |match| symbol_events["completions"].has_key?(symbols[match[1]]) }
+        completions.each do |completion|
+          event_name = symbol_events["completions"][symbols[completion[1]]]
+          match = events.call(event_name, {input, position, completion[0].size})
+
+          if match
+            matches << {match.as(String), completion[1]}
+          end
+        end
+
+        matches.each do |match|
           status = LibMarpa.marpa_r_alternative(recce, symbols[match[1]], position + 1, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
@@ -227,9 +263,9 @@ module Marpa
     def call(name, context)
       {% begin %}
         case name
-          {% for method in @type.methods.select { |method| method.args.size == 1 } %}
+        {% for method in @type.methods.select { |method| method.args.size == 1 } %}
         when {{method.name.stringify}}
-        return {{method.name}}(context)
+          return {{method.name}}(context)
         {% end %}
 
         {% if !@type.has_method? :default %}
@@ -244,12 +280,35 @@ module Marpa
     end
   end
 
+  # Skeleton class for events
+  class Events
+    # Class macro that converts a name and given context to a function call to
+    # a method with that name
+    def call(name, context)
+      {% begin %}
+        case name
+          {% for method in @type.methods.select { |method| method.args.size == 1 } %}
+        when {{method.name.stringify}}
+          return {{method.name}}(context)
+        {% end %}
+
+        {% if !@type.has_method? :default %}
+        when "default"
+          raise "Cannot call event without name"
+        {% end %}
+
+        else
+          raise %(Could not find event "#{name}")
+        end
+      {% end %}
+    end
+  end
+
   class Builder < Marpa::Actions
     property grammar
     property symbols
     property rules
-    property tokens
-    property elements
+    property symbol_events
     property discards
 
     def initialize
@@ -262,6 +321,9 @@ module Marpa
       @rules = {} of Int32 => Hash(String, String)
 
       @symbols = {} of String => Int32
+      @symbol_events = {} of String => Hash(Int32, String)
+      @symbol_events["predictions"] = {} of Int32 => String
+      @symbol_events["completions"] = {} of Int32 => String
 
       @tokens = {} of String => Array(String) | Regex
       @elements = {} of String => Regex
@@ -275,7 +337,7 @@ module Marpa
           case value
           when Regex
             lexer[key] = value
-            tokens.delete(key)
+            @tokens.delete(key)
           when Array
             regex = ""
             options = Regex::Options::None
@@ -284,9 +346,9 @@ module Marpa
               if lexer[element]?
                 options = options | lexer[element].options
                 regex += lexer[element].source
-              elsif elements[element]?
-                options = options | elements[element].options
-                regex += elements[element].source
+              elsif @elements[element]?
+                options = options | @elements[element].options
+                regex += @elements[element].source
               else
                 regex = ""
                 break
@@ -295,13 +357,13 @@ module Marpa
 
             if regex != ""
               lexer[key] = Regex.new(regex, options)
-              tokens.delete(key)
+              @tokens.delete(key)
             end
           end
         end
       end
 
-      if !tokens.empty?
+      if !@tokens.empty?
         error_msg = "Could not form L0 rules:\n"
         @tokens.each do |key, value|
           error_msg += "    #{key}\n"
@@ -498,6 +560,44 @@ module Marpa
       rule = {} of String => String
       rule["lhs"] = lhs
       @rules[rule_id] = rule
+
+      ""
+    end
+
+    def lexeme_rule(context)
+      symbol = context[2].as(Array)
+      symbol = symbol.flatten
+      symbol = symbol[0]
+      symbol_id = @symbols[symbol]
+
+      pause = "before"
+      event = "default"
+      adverbs = context[3].as(Array)
+      adverbs.each do |adverb|
+        adverb = adverb.as(Array).flatten
+
+        case adverb[0]
+        when "pause"
+          pause = adverb[2].as(String)
+        when "event"
+          event = adverb[2].as(String)
+        end
+      end
+
+      status = 0
+      case pause
+      when "before"
+        @symbol_events["predictions"][symbol_id] = event
+        status = LibMarpa.marpa_g_symbol_is_prediction_event_set(grammar, symbol_id, 1)
+      when "after"
+        @symbol_events["completions"][symbol_id] = event
+        status = LibMarpa.marpa_g_symbol_is_completion_event_set(grammar, symbol_id, 1)
+      end
+
+      if status < 0
+        raise "Error setting symbol event for symbol #{symbol}"
+      end
+
       ""
     end
 

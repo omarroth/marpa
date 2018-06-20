@@ -146,7 +146,7 @@ lib LibMarpa
     t_error_string : LibC::Char*
   end
 
-  struct Marpa_Event
+  struct MarpaEvent
     t_type : MarpaEventType
     t_value : LibC::Int
   end
@@ -172,7 +172,7 @@ lib LibMarpa
 
   type MarpaBocage = Void*
   type MarpaConfig = Marpa_Config
-  type MarpaEvent = Marpa_Event
+  # type MarpaEvent = Marpa_Event
   type MarpaGrammar = Void*
   type MarpaOrder = Void*
   type MarpaRecognizer = Void*
@@ -282,17 +282,16 @@ lib LibMarpa
   end
 
   enum MarpaEventType
-    MARPA_EVENT_COUNT                 = 10
-    MARPA_EVENT_NONE                  =  0
-    MARPA_EVENT_COUNTED_NULLABLE      =  1
-    MARPA_EVENT_EARLEY_ITEM_THRESHOLD =  2
-    MARPA_EVENT_EXHAUSTED             =  3
-    MARPA_EVENT_LOOP_RULES            =  4
-    MARPA_EVENT_NULLING_TERMINAL      =  5
-    MARPA_EVENT_SYMBOL_COMPLETED      =  6
-    MARPA_EVENT_SYMBOL_EXPECTED       =  7
-    MARPA_EVENT_SYMBOL_NULLED         =  8
-    MARPA_EVENT_SYMBOL_PREDICTED      =  9
+    MARPA_EVENT_NONE                  = 0
+    MARPA_EVENT_COUNTED_NULLABLE      = 1
+    MARPA_EVENT_EARLEY_ITEM_THRESHOLD = 2
+    MARPA_EVENT_EXHAUSTED             = 3
+    MARPA_EVENT_LOOP_RULES            = 4
+    MARPA_EVENT_NULLING_TERMINAL      = 5
+    MARPA_EVENT_SYMBOL_COMPLETED      = 6
+    MARPA_EVENT_SYMBOL_EXPECTED       = 7
+    MARPA_EVENT_SYMBOL_NULLED         = 8
+    MARPA_EVENT_SYMBOL_PREDICTED      = 9
   end
 
   enum MarpaStepType
