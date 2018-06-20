@@ -1,0 +1,13 @@
+:start ::= sentence
+sentence ::= element
+array ::= 'A' <array count> '(' elements ')'
+string ::= 'S' <string length> '(' text ')' 
+elements ::= element+
+element ::= string | array
+
+<array count> ~ [\d]+
+<string length> ~ [\d]+
+text ~ [\d\D]
+
+:lexeme ~ <string length> pause => after event => string_length
+:lexeme ~ text pause => before event => text
