@@ -57,4 +57,15 @@ describe Marpa do
     stack = parser.parse("a", grammar)
     stack.should eq ["a"]
   end
+
+  it "tests events" do
+    parser = Marpa::Parser.new
+    events = Events.new
+    grammar = File.read("examples/events/events.bnf")
+
+    input = "S4()))))"
+    stack = parser.parse(input, grammar, events: events)
+
+    stack.should eq [[["S", "4", "(", "))))", ")"]]]
+  end
 end
