@@ -108,14 +108,16 @@ module Marpa
             event_type = LibMarpa.marpa_g_event(grammar, pointerof(event), i)
             value = event.t_value
 
+            length = 0
             case event_type
             when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_COMPLETED
               event_name = lexemes[value]["completion"]
+              length = values.last_value.size
             when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_PREDICTED
               event_name = lexemes[value]["prediction"]
             end
 
-            match = events.call(event_name, {input, position, 0, expected})
+            match = events.call(event_name, {position, length, expected})
 
             if match
               matches << match.as(Tuple(String, String))
@@ -124,7 +126,7 @@ module Marpa
         end
 
         # Perform default rule
-        match = events.call("default", {input, position, 0, expected})
+        match = events.call("default", {position, 0, expected})
         if match
           matches << match.as(Tuple(String, String))
         end
@@ -175,7 +177,7 @@ module Marpa
         completions = matches.select { |match| lexemes[symbols[match[1]]]?.try &.["completion"]? }
         completions.each do |completion|
           event_name = lexemes[symbols[completion[1]]]["completion"]
-          match = events.call(event_name, {input, position, completion[0].size, expected})
+          match = events.call(event_name, {position, completion[0].size, expected})
 
           if match
             matches << match.as(Tuple(String, String))
@@ -300,7 +302,7 @@ module Marpa
 
         {% if !@type.has_method? :default %}
         when "default"
-            return context
+          return context
         {% end %}
 
         else
@@ -317,7 +319,7 @@ module Marpa
     def call(name, context)
       {% begin %}
         case name
-          {% for method in @type.methods.select { |method| method.args.size == 1 } %}
+        {% for method in @type.methods.select { |method| method.args.size == 1 && method.name != :initialize } %}
         when {{method.name.stringify}}
           return {{method.name}}(context)
         {% end %}

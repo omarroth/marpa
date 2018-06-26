@@ -60,10 +60,10 @@ describe Marpa do
 
   it "tests events" do
     parser = Marpa::Parser.new
-    events = Events.new
     grammar = File.read("examples/events/events.bnf")
-
     input = "S4()))))"
+    events = Events.new(input)
+
     stack = parser.parse(input, grammar, events: events)
 
     stack.should eq [[["S", "4", "(", "))))", ")"]]]
