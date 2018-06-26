@@ -2,6 +2,30 @@ require "./marpa/*"
 
 module Marpa
   class Parser
+    # Convenience method to expose internals of grammar, lexer, symbols, rules, etc.
+    # Accepts `grammar` as BNF, and returns a builder object that can be used the same
+    # as before:
+    # ```
+    # parser = Marpa::Parser.new
+    # grammar = <<-'END_BNF'
+    # :start ::= A
+    # A ::= a
+    # a ~ 'a'
+    # END_BNF
+    # input = "a"
+    # grammar = parser.compile(grammar)
+    # parser.parse(input, grammar) # => ["a"]
+    # ```
+    def compile(grammar : String)
+      meta_grammar = Builder.new
+      meta_grammar = build_meta_grammar(meta_grammar)
+
+      builder = Builder.new
+      parse(grammar, meta_grammar, builder)
+
+      return builder
+    end
+
     # Parse `input` given `grammar` in BNF format.
     # Accepts optional `actions` that can be used to perform semantics
     # on given rules.
@@ -331,51 +355,54 @@ module Marpa
       @tokens = {} of String => Array(String) | Regex
       @elements = {} of String => Regex
       @discards = [] of String
+
+      @lexer = {} of String => Regex
     end
 
     def lexer
-      lexer = {} of String => Regex
-      5.times do
-        @tokens.each do |key, value|
-          case value
-          when Regex
-            lexer[key] = value
-            @tokens.delete(key)
-          when Array
-            regex = ""
-            options = Regex::Options::None
-
-            value.each do |element|
-              if lexer[element]?
-                options = options | lexer[element].options
-                regex += lexer[element].source
-              elsif @elements[element]?
-                options = options | @elements[element].options
-                regex += @elements[element].source
-              else
-                regex = ""
-                break
-              end
-            end
-
-            if regex != ""
-              lexer[key] = Regex.new(regex, options)
+      if !@tokens.empty?
+        5.times do
+          @tokens.each do |key, value|
+            case value
+            when Regex
+              @lexer[key] = value
               @tokens.delete(key)
+            when Array
+              regex = ""
+              options = Regex::Options::None
+
+              value.each do |element|
+                if @lexer[element]?
+                  options = options | @lexer[element].options
+                  regex += @lexer[element].source
+                elsif @elements[element]?
+                  options = options | @elements[element].options
+                  regex += @elements[element].source
+                else
+                  regex = ""
+                  break
+                end
+              end
+
+              if regex != ""
+                @lexer[key] = Regex.new(regex, options)
+                @tokens.delete(key)
+              end
             end
           end
         end
-      end
 
-      if !@tokens.empty?
-        error_msg = "Could not form L0 rules:\n"
-        @tokens.each do |key, value|
-          error_msg += "    #{key}\n"
+        if !@tokens.empty?
+          error_msg = "Could not form L0 rules:\n"
+          @tokens.each do |key, value|
+            error_msg += "    #{key}\n"
+          end
+
+          raise error_msg
         end
-
-        raise error_msg
       end
 
-      return lexer
+      return @lexer
     end
 
     def start_rule(context)
