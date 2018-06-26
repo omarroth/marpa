@@ -120,7 +120,7 @@ lib LibMarpa
   fun marpa_r_ref(r : MarpaRecognizer) : MarpaRecognizer
   fun marpa_r_start_input(r : MarpaRecognizer) : LibC::Int
   fun marpa_r_terminal_is_expected(r : MarpaRecognizer, symbol_id : MarpaSymbolId) : LibC::Int
-  fun marpa_r_terminals_expected(r : MarpaRecognizer, buffer : MarpaSymbolId*) : LibC::Int
+  fun marpa_r_terminals_expected(r : MarpaRecognizer, buffer : LibC::Int*) : LibC::Int
   fun marpa_r_unref(r : MarpaRecognizer)
   fun marpa_r_zwa_default(r : MarpaRecognizer, zwaid : MarpaAssertionId) : LibC::Int
   fun marpa_r_zwa_default_set(r : MarpaRecognizer, zwaid : MarpaAssertionId, default_value : LibC::Int) : LibC::Int

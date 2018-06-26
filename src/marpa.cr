@@ -55,10 +55,10 @@ module Marpa
 
       position = 0
       values = {} of Int32 => String
-      buffer = uninitialized Int32[64]
+      buffer = StaticArray(Int32, 128).new(0_u8)
       event = uninitialized LibMarpa::MarpaEvent
       until position == input.size
-        size = LibMarpa.marpa_r_terminals_expected(recce, buffer)
+        size = LibMarpa.marpa_r_terminals_expected(recce, buffer.to_unsafe)
 
         if size == 0
           raise "Parse exhausted after #{position} characters"
