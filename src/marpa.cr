@@ -22,7 +22,7 @@ module Marpa
       grammar = builder.grammar
 
       symbols = builder.symbols
-      symbol_events = builder.symbol_events
+      lexemes = builder.lexemes
       rules = builder.rules
 
       lexer = builder.lexer
@@ -86,9 +86,9 @@ module Marpa
 
             case event_type
             when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_COMPLETED
-              event_name = symbol_events["completions"][value]
+              event_name = lexemes[value]["completion"]
             when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_PREDICTED
-              event_name = symbol_events["predictions"][value]
+              event_name = lexemes[value]["prediction"]
             end
 
             match = events.call(event_name, {input, position, 0})
@@ -142,9 +142,9 @@ module Marpa
         matches.select! { |a, b| a.size == matches[0][0].size }
 
         # L0 symbols don't trigger completion events, so we do it here
-        completions = matches.select { |match| symbol_events["completions"].has_key?(symbols[match[1]]) }
+        completions = matches.select { |match| lexemes[symbols[match[1]]]?.try &.["completion"]? }
         completions.each do |completion|
-          event_name = symbol_events["completions"][symbols[completion[1]]]
+          event_name = lexemes[symbols[completion[1]]]["completion"]
           match = events.call(event_name, {input, position, completion[0].size})
 
           if match
@@ -306,9 +306,9 @@ module Marpa
 
   class Builder < Marpa::Actions
     property grammar
-    property symbols
     property rules
-    property symbol_events
+    property symbols
+    property lexemes
     property discards
 
     def initialize
@@ -319,11 +319,8 @@ module Marpa
       LibMarpa.marpa_g_force_valued(@grammar)
 
       @rules = {} of Int32 => Hash(String, String)
-
+      @lexemes = {} of Int32 => Hash(String, String)
       @symbols = {} of String => Int32
-      @symbol_events = {} of String => Hash(Int32, String)
-      @symbol_events["predictions"] = {} of Int32 => String
-      @symbol_events["completions"] = {} of Int32 => String
 
       @tokens = {} of String => Array(String) | Regex
       @elements = {} of String => Regex
@@ -584,16 +581,20 @@ module Marpa
         end
       end
 
+      lexeme = @lexemes[symbol_id]?
+      lexeme ||= {} of String => String
+
       status = 0
       case pause
       when "before"
-        @symbol_events["predictions"][symbol_id] = event
+        lexeme["prediction"] = event
         status = LibMarpa.marpa_g_symbol_is_prediction_event_set(grammar, symbol_id, 1)
       when "after"
-        @symbol_events["completions"][symbol_id] = event
+        lexeme["completion"] = event
         status = LibMarpa.marpa_g_symbol_is_completion_event_set(grammar, symbol_id, 1)
       end
 
+      @lexemes[symbol_id] = lexeme
       if status < 0
         raise "Error setting symbol event for symbol #{symbol}"
       end
