@@ -91,12 +91,18 @@ module Marpa
               event_name = lexemes[value]["prediction"]
             end
 
-            match = events.call(event_name, {input, position, 0})
+            match = events.call(event_name, {input, position, 0, expected})
 
             if match
-              matches << {match.as(String), symbols.key_for(value)}
+              matches << match.as(Tuple(String, String))
             end
           end
+        end
+
+        # Perform default rule
+        match = events.call("default", {input, position, 0, expected})
+        if match
+          matches << match.as(Tuple(String, String))
         end
 
         if matches.empty?
@@ -145,10 +151,10 @@ module Marpa
         completions = matches.select { |match| lexemes[symbols[match[1]]]?.try &.["completion"]? }
         completions.each do |completion|
           event_name = lexemes[symbols[completion[1]]]["completion"]
-          match = events.call(event_name, {input, position, completion[0].size})
+          match = events.call(event_name, {input, position, completion[0].size, expected})
 
           if match
-            matches << {match.as(String), completion[1]}
+            matches << match.as(Tuple(String, String))
           end
         end
 
@@ -294,7 +300,7 @@ module Marpa
 
         {% if !@type.has_method? :default %}
         when "default"
-          raise "Cannot call event without name"
+          return
         {% end %}
 
         else

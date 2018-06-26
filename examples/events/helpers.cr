@@ -16,6 +16,6 @@ class Events < Marpa::Events
     input, position = context
 
     text = input[position, @size]
-    return text
+    return {text, "text"}
   end
 end
