@@ -293,7 +293,7 @@ module Marpa
     def call(name, context)
       {% begin %}
         case name
-        {% for method in @type.methods.select { |method| method.args.size == 1 } %}
+        {% for method in @type.methods.select { |method| method.args.size == 1 && method.name != :initialize } %}
         when {{method.name.stringify}}
           return {{method.name}}(context)
         {% end %}
