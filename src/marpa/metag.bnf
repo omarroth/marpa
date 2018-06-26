@@ -15,21 +15,22 @@ statement ::= <start rule>
 <lexeme rule> ::= ':lexeme' <op declare match> symbol <adverb list> action => lexeme_rule
 
 priorities ::= alternatives+
-    separator => <op loosen> proper => 1
+    separator => '||' proper => 1
 alternatives ::= alternative+
-    separator => <op equal priority> proper => 1
+    separator => '|' proper => 1
 alternative ::= rhs <adverb list>
 
 <adverb list> ::= <adverb item>*
-<adverb item> ::= action
+<adverb item> ::= <action specification>
   | <separator specification>
   | <proper specification>
   | <rank specification>
   | <pause specification>
   | <event specification>
 
-action ::= 'action' '=>' <name>
+<action specification> ::= 'action' '=>' <name>
 <separator specification> ::= 'separator' '=>' <single symbol>
+| 'separator' '=>' <single quoted string>
 <proper specification> ::= 'proper' '=>' boolean
 <rank specification> ::= 'rank' '=>' digit
 <pause specification> ::= 'pause' '=>' <before or after>
@@ -38,7 +39,7 @@ action ::= 'action' '=>' <name>
 lhs ::= symbol
 rhs ::= <rhs primary>+
 <rhs primary> ::= <single symbol>
-  | <single quoted string> action => create_literal
+  | <single quoted string>
   | <parenthesized rhs primary list>
 <parenthesized rhs primary list> ::= '(' <rhs list> ')'
 <rhs list> ::= <rhs primary>+
@@ -57,8 +58,6 @@ whitespace ~ [\s]+
 
 <op declare bnf> ~ '::='
 <op declare match> ~ '~'
-<op equal priority> ~ '|'
-<op loosen> ~ '||'
 quantifier ::= '*' | '+'
 
 <name> ~ [\w]+
@@ -70,8 +69,8 @@ digit ~ [\d]+
 <bracketed name> ~ '<' <bracketed name string> '>'
 <bracketed name string> ~ [\s\w]+
 
-<single quoted string> ~ ['] <string without single quote> [']
-<string without single quote> ~ [^'\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+
+<single quoted string> ::= <quoted string> action => create_literal
+<quoted string> ~ /'[^'\x0A\x0B\x0C\x0D\x{0085}\x{2028}\x{2029}]+'/
 
 <regex> ~ /\/.*\/[imx]{0,3}/
 <character class> ~ '[' <cc elements> ']'
