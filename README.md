@@ -57,7 +57,6 @@ See `examples/` for a more thorough demonstration of this interface's capabiliti
 ## Limitations
 
 - Does not provide all parses of ambiguous input.
-- Does not support [events](https://metacpan.org/pod/distribution/Marpa-R2/pod/Scanless/DSL.pod#pause) (see `exapmles/nbt` for a note on this).
 - Several other important features of the [SLIF interface](https://metacpan.org/pod/distribution/Marpa-R2/pod/Scanless/DSL.pod), on which this one is based.
 
 ## Contributing
