@@ -3,7 +3,7 @@ require "./spec_helper"
 describe Marpa do
   it "parses json" do
     grammar = File.read("examples/json/json.bnf")
-    input = %q([1,"abc\nd\"ef",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
+    input = %q([1,"abc\nd\"ef","",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
 
     parser = Marpa::Parser.new
     actions = JSON_Actions.new
