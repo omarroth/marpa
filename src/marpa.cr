@@ -121,12 +121,9 @@ module Marpa
         end
 
         @matches = [] of {String, String}
-        @expected.each do |terminal|
-          md = @lexer[terminal].match(input, @position)
-          if md && md.begin == @position
-            @matches << {md[0], terminal}
-          end
-        end
+
+        # Perform default rule
+        events.call("default", self)
 
         event_count = LibMarpa.marpa_g_event_count(@grammar)
         if event_count > 0
@@ -149,8 +146,12 @@ module Marpa
           end
         end
 
-        # Perform default rule
-        events.call("default", self)
+        @expected.each do |terminal|
+          md = @lexer[terminal].match(input, @position)
+          if md && md.begin == @position
+            @matches << {md[0], terminal}
+          end
+        end
 
         if @matches.empty?
           discard = false
@@ -311,49 +312,37 @@ module Marpa
     # a method with that name
     def call(name, context)
       {% begin %}
+        {%
+          ancestors = @type.ancestors
+          methods = @type.methods
+        %}
+        {% for ancestor in ancestors %}
+          {% methods = methods + ancestor.methods %}
+        {% end %}
+        {%
+          methods = methods.select { |method| method.args.size == 1 && method.args[0].name == :context }
+          methods = methods.map { |method| method.name }.uniq
+        %}
+
         case name
-        {% for ancestor in @type.ancestors + [@type] %}
-        {% for method in ancestor.methods.select { |method| method.args.size == 1 && method.args[0].name == :context } %}
-        when {{method.name.stringify}}
-          return {{method.name}}(context)
+        {% for method in methods %}
+        when {{method.stringify}}
+          return {{method}}(context)
         {% end %}
-        {% end %}
-
-        {% if !@type.has_method? :default %}
-        when "default"
-          return context
-        {% end %}
-
         else
           raise %(Could not find action "#{name}")
         end
       {% end %}
     end
+
+    def default(context)
+      return context
+    end
   end
 
   # Skeleton class for events
-  class Events
-    # Class macro that converts a name and given context to a function call to
-    # a method with that name
-    def call(name, context)
-      {% begin %}
-        case name
-        {% for ancestor in @type.ancestors + [@type] %}
-        {% for method in ancestor.methods.select { |method| method.args.size == 1 && method.args[0].name == :context } %}
-        when {{method.name.stringify}}
-          return {{method.name}}(context)
-        {% end %}
-        {% end %}
-
-        {% if !@type.has_method? :default %}
-        when "default"
-          return
-        {% end %}
-
-        else
-          raise %(Could not find event "#{name}")
-        end
-      {% end %}
+  class Events < Marpa::Actions
+    def default(context)
     end
   end
 
