@@ -2,6 +2,31 @@ require "./marpa/*"
 
 module Marpa
   class Parser
+    property grammar
+    property symbols
+    property lexemes
+    property rules
+    property lexer
+    property discards
+    property position
+    property matches
+    property values
+
+    def initialize
+      @grammar = uninitialized LibMarpa::MarpaGrammar
+
+      @symbols = {} of String => Int32
+      @lexemes = {} of Int32 => Hash(String, String)
+      @rules = {} of Int32 => Hash(String, String)
+
+      @lexer = {} of String => Regex
+      @discards = [] of String
+
+      @position = 0
+      @matches = [] of {String, String}
+      @values = {} of Int32 => String
+    end
+
     # Convenience method to expose internals of grammar, lexer, symbols, rules, etc.
     # Accepts `grammar` as BNF, and returns a builder object that can be used the same
     # as before:
@@ -43,21 +68,21 @@ module Marpa
     # Internal method used to parse the given input given computed grammar,
     # Notated here as `builder`
     def parse(input : String, builder : Builder, actions : Actions = Actions.new, events : Events = Events.new)
-      grammar = builder.grammar
+      @grammar = builder.grammar
 
-      symbols = builder.symbols
-      lexemes = builder.lexemes
-      rules = builder.rules
+      @symbols = builder.symbols
+      @lexemes = builder.lexemes
+      @rules = builder.rules
 
-      lexer = builder.lexer
-      discards = builder.discards
+      @lexer = builder.lexer
+      @discards = builder.discards
 
-      encountered = lexer.keys.map { |symbol| symbols[symbol] }
-      encountered += rules.map { |k, v| symbols[v["lhs"]] }
-      encountered = symbols.values - encountered
+      encountered = @lexer.keys.map { |symbol| @symbols[symbol] }
+      encountered += @rules.map { |k, v| @symbols[v["lhs"]] }
+      encountered = @symbols.values - encountered
 
       if encountered.size > 0
-        encountered = encountered.map { |id| symbols.key_for(id) }
+        encountered = encountered.map { |id| @symbols.key_for(id) }
         error_msg = "Symbols not defined:\n"
 
         encountered.each do |id|
@@ -68,96 +93,86 @@ module Marpa
       end
 
       p_error_string = String.new
-      LibMarpa.marpa_g_error_clear(grammar)
-      LibMarpa.marpa_g_precompute(grammar)
-      status = LibMarpa.marpa_g_error(grammar, p_error_string)
+      LibMarpa.marpa_g_error_clear(@grammar)
+      LibMarpa.marpa_g_precompute(@grammar)
+      status = LibMarpa.marpa_g_error(@grammar, p_error_string)
       if status.value > 0
         raise "Precomputing grammar produced #{status}"
       end
-      recce = LibMarpa.marpa_r_new(grammar)
+      recce = LibMarpa.marpa_r_new(@grammar)
       LibMarpa.marpa_r_start_input(recce)
 
-      position = 0
-      values = {} of Int32 => String
+      @position = 0
       buffer = StaticArray(Int32, 128).new(0_u8)
       event = uninitialized LibMarpa::MarpaEvent
-      until position == input.size
+      until @position == input.size
         size = LibMarpa.marpa_r_terminals_expected(recce, buffer.to_unsafe)
 
         if size == 0
-          raise "Parse exhausted after #{position} characters"
+          raise "Parse exhausted after #{@position} characters"
         end
 
         slice = buffer.to_slice[0, size]
         expected = [] of String
         slice.each do |id|
-          expected << symbols.key_for(id)
+          expected << @symbols.key_for(id)
         end
 
-        matches = [] of {String, String}
+        @matches = [] of {String, String}
         expected.each do |terminal|
-          md = lexer[terminal].match(input, position)
-          if md && md.begin == position
-            matches << {md[0], terminal}
+          md = @lexer[terminal].match(input, @position)
+          if md && md.begin == @position
+            @matches << {md[0], terminal}
           end
         end
 
-        event_count = LibMarpa.marpa_g_event_count(grammar)
+        event_count = LibMarpa.marpa_g_event_count(@grammar)
         if event_count > 0
           event_count.times do |i|
-            event_type = LibMarpa.marpa_g_event(grammar, pointerof(event), i)
+            event_type = LibMarpa.marpa_g_event(@grammar, pointerof(event), i)
             value = event.t_value
 
-            length = 0
             case event_type
             when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_COMPLETED
-              event_name = lexemes[value]["completion"]
-              length = values.last_value.size
+              event_name = @lexemes[value]["completion"]
             when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_PREDICTED
-              event_name = lexemes[value]["prediction"]
+              event_name = @lexemes[value]["prediction"]
             when LibMarpa::MarpaEventType::MARPA_EVENT_EARLEY_ITEM_THRESHOLD
               raise "Reached maximum number of earley items, see https://metacpan.org/pod/distribution/Marpa-R2/pod/Scanless/R.pod#too_many_earley_items"
             else
               raise "Unimplemented event: #{event_type}"
             end
 
-            match = events.call(event_name, {position, length, expected})
-
-            if match
-              matches << match.as(Tuple(String, String))
-            end
+            events.call(event_name, self)
           end
         end
 
         # Perform default rule
-        match = events.call("default", {position, 0, expected})
-        if match
-          matches << match.as(Tuple(String, String))
-        end
+        events.call("default", self)
 
-        if matches.empty?
+        if @matches.empty?
           discard = false
-          discards.each do |terminal|
-            md = input.match(lexer[terminal], position)
-            if md && md.begin == position
-              matches << {md[0], terminal}
+          @discards.each do |terminal|
+            md = input.match(@lexer[terminal], @position)
+            if md && md.begin == @position
+              @matches << {md[0], terminal}
               discard = true
             end
           end
 
           if discard
-            matches.sort_by! { |a, b| a.size }.reverse!
-            position += matches[0][0].size
+            @matches.sort_by! { |a, b| a.size }.reverse!
+            @position += @matches[0][0].size
             next
           else
-            last_newline = input[0..position].rindex("\n")
+            last_newline = input[0..@position].rindex("\n")
             last_newline ||= 0
 
-            col = position - last_newline
-            row = input[0..position].count("\n") + 1
+            col = @position - last_newline
+            row = input[0..@position].count("\n") + 1
 
-            error_msg = "Lexing error at row #{row}, column #{col}, (position: #{position}) here:\n"
-            error_msg += input[last_newline..position]
+            error_msg = "Lexing error at row #{row}, column #{col}, (position: #{@position}) here:\n"
+            error_msg += input[last_newline..@position]
             error_msg += "\n"
             error_msg += " " * Math.max(col - 1, 0)
             error_msg += "^\n"
@@ -171,32 +186,28 @@ module Marpa
           end
         end
 
-        matches.sort_by! { |a, b| a.size }.reverse!
-        position += matches[0][0].size
-        values[position + 1] = matches[0][0]
+        @matches.sort_by! { |a, b| a.size }.reverse!
+        @position += matches[0][0].size
+        @values[@position + 1] = @matches[0][0]
 
-        matches.select! { |a, b| a.size == matches[0][0].size }
+        @matches.select! { |a, b| a.size == @matches[0][0].size }
 
         # L0 symbols don't trigger completion events, so we do it here
-        completions = matches.select { |match| lexemes[symbols[match[1]]]?.try &.["completion"]? }
+        completions = @matches.select { |match| @lexemes[@symbols[match[1]]]?.try &.["completion"]? }
         completions.each do |completion|
-          event_name = lexemes[symbols[completion[1]]]["completion"]
-          match = events.call(event_name, {position, completion[0].size, expected})
-
-          if match
-            matches << match.as(Tuple(String, String))
-          end
+          event_name = @lexemes[@symbols[completion[1]]]["completion"]
+          events.call(event_name, self)
         end
 
-        matches.each do |match|
-          status = LibMarpa.marpa_r_alternative(recce, symbols[match[1]], position + 1, 1)
+        @matches.each do |match|
+          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], @position + 1, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-            last_newline = input[0..position].rindex("\n")
+            last_newline = input[0..@position].rindex("\n")
             last_newline ||= 0
 
-            col = position - last_newline
-            row = input[0..position].count("\n") + 1
+            col = @position - last_newline
+            row = input[0..@position].count("\n") + 1
 
             error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
             expected.each do |id|
@@ -209,39 +220,39 @@ module Marpa
 
         status = LibMarpa.marpa_r_earleme_complete(recce)
         if status < 0
-          error = LibMarpa.marpa_g_error(grammar, p_error_string)
+          error = LibMarpa.marpa_g_error(@grammar, p_error_string)
           raise "Earleme complete: #{error}"
         end
       end
 
       bocage = LibMarpa.marpa_b_new(recce, -1)
       if !bocage
-        e = LibMarpa.marpa_g_error(grammar, p_error_string)
+        e = LibMarpa.marpa_g_error(@grammar, p_error_string)
         raise "Bocage complete: #{e}"
       end
 
       order = LibMarpa.marpa_o_new(bocage)
       if !order
-        e = LibMarpa.marpa_g_error(grammar, p_error_string)
+        e = LibMarpa.marpa_g_error(@grammar, p_error_string)
         raise "Order complete: #{e}"
       end
       LibMarpa.marpa_o_rank(order)
 
       tree = LibMarpa.marpa_t_new(order)
       if !tree
-        e = LibMarpa.marpa_g_error(grammar, p_error_string)
+        e = LibMarpa.marpa_g_error(@grammar, p_error_string)
         raise "Tree complete: #{e}"
       end
 
       tree_status = LibMarpa.marpa_t_next(tree)
       if tree_status <= -1
-        e = LibMarpa.marpa_g_error(grammar, p_error_string)
+        e = LibMarpa.marpa_g_error(@grammar, p_error_string)
         raise "Tree status: #{e}"
       end
 
       value = LibMarpa.marpa_v_new(tree)
       if !value
-        e = LibMarpa.marpa_g_error(grammar, p_error_string)
+        e = LibMarpa.marpa_g_error(@grammar, p_error_string)
         raise "Value returned: #{e}"
       end
 
@@ -251,7 +262,7 @@ module Marpa
 
         case step_type
         when step_type.value < 0
-          e = LibMarpa.marpa_g_error(grammar, p_error_string)
+          e = LibMarpa.marpa_g_error(@grammar, p_error_string)
           raise "Event returned #{e}"
         when LibMarpa::MarpaStepType::MARPA_STEP_RULE
           rule = value.value
@@ -263,7 +274,7 @@ module Marpa
           context = stack[start..stop]
           stack.delete_at(start..stop)
 
-          action = rules[rule_id]["action"]?
+          action = @rules[rule_id]["action"]?
           action ||= "default"
 
           context = actions.call(action, context)
@@ -276,7 +287,7 @@ module Marpa
         when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
           token = value.value
 
-          stack << values[token.t_token_value]
+          stack << @values[token.t_token_value]
         when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
           symbol = value.value
 
@@ -358,15 +369,15 @@ module Marpa
       @grammar = LibMarpa.marpa_g_new(pointerof(@config))
       LibMarpa.marpa_g_force_valued(@grammar)
 
-      @rules = {} of Int32 => Hash(String, String)
-      @lexemes = {} of Int32 => Hash(String, String)
       @symbols = {} of String => Int32
+      @lexemes = {} of Int32 => Hash(String, String)
+      @rules = {} of Int32 => Hash(String, String)
+
+      @lexer = {} of String => Regex
+      @discards = [] of String
 
       @tokens = {} of String => Array(String) | Regex
       @elements = {} of String => Regex
-      @discards = [] of String
-
-      @lexer = {} of String => Regex
     end
 
     def lexer

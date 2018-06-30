@@ -7,16 +7,16 @@ class Events < Marpa::Events
   end
 
   def string_length(context)
-    position, length = context
-    @size = @input[position - length, length].to_i
+    position = context.position
+    length = context.values.last_value.size
 
-    return
+    @size = @input[position - length, length].to_i
   end
 
   def text(context)
-    position = context[0]
-
+    position = context.position
     text = @input[position, @size]
-    return {text, "text"}
+
+    context.matches << {text, "text"}
   end
 end
