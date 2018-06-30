@@ -46,7 +46,7 @@ input = "100 + 200"
 parser.parse(input, grammar) # => ["100", "+", "200"]
 ```
 
-See `examples/` for a more thorough demonstration of this interface's capabilities, including a parser for JSON.
+See `examples/` for a more thorough demonstration of this interface's capabilities, including a JSON parser.
 
 ## Features
 
@@ -56,7 +56,7 @@ See `examples/` for a more thorough demonstration of this interface's capabiliti
 
 ## Limitations
 
-- Does not provide all parses of ambiguous input.
+- Does not currently allow user to access all parses of ambiguous input.
 - Several other important features of the [SLIF interface](https://metacpan.org/pod/distribution/Marpa-R2/pod/Scanless/DSL.pod), on which this one is based.
 
 ## Contributing

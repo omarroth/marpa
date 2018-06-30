@@ -10,6 +10,6 @@ description: |
 libraries:
   libmarpa: ~> 8.6.0
 
-crystal: 0.25.0
+crystal: 0.25.1
 
 license: MIT

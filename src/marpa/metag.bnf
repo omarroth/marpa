@@ -30,7 +30,7 @@ alternative ::= rhs <adverb list>
 
 <action specification> ::= 'action' '=>' <name>
 <separator specification> ::= 'separator' '=>' <single symbol>
-| 'separator' '=>' <single quoted string>
+  | 'separator' '=>' <single quoted string>
 <proper specification> ::= 'proper' '=>' boolean
 <rank specification> ::= 'rank' '=>' digit
 <pause specification> ::= 'pause' '=>' <before or after>
