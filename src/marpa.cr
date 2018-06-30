@@ -9,6 +9,7 @@ module Marpa
     property lexer
     property discards
     property position
+    property expected
     property matches
     property values
 
@@ -23,6 +24,7 @@ module Marpa
       @discards = [] of String
 
       @position = 0
+      @expected = [] of String
       @matches = [] of {String, String}
       @values = {} of Int32 => String
     end
@@ -113,13 +115,13 @@ module Marpa
         end
 
         slice = buffer.to_slice[0, size]
-        expected = [] of String
+        @expected = [] of String
         slice.each do |id|
-          expected << @symbols.key_for(id)
+          @expected << @symbols.key_for(id)
         end
 
         @matches = [] of {String, String}
-        expected.each do |terminal|
+        @expected.each do |terminal|
           md = @lexer[terminal].match(input, @position)
           if md && md.begin == @position
             @matches << {md[0], terminal}
@@ -178,7 +180,7 @@ module Marpa
             error_msg += "^\n"
 
             error_msg += "Expected: \n"
-            expected.each do |id|
+            @expected.each do |id|
               error_msg += "    #{id}\n"
             end
 
@@ -210,7 +212,7 @@ module Marpa
             row = input[0..@position].count("\n") + 1
 
             error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
-            expected.each do |id|
+            @expected.each do |id|
               error_msg += "    #{id}\n"
             end
 
