@@ -280,7 +280,7 @@ module Marpa
           action = @rules[rule_id]["action"]?
           action ||= "default"
 
-          context = actions.call(action, context)
+          context = actions.call(action, context, rule_id)
 
           if context
             stack << context
@@ -310,7 +310,7 @@ module Marpa
   class Actions
     # Class macro that converts a name and given context to a function call to
     # a method with that name
-    def call(name, context)
+    def call(name, context, rule_id = 0)
       {% begin %}
         {%
           ancestors = @type.ancestors
@@ -319,17 +319,18 @@ module Marpa
         {% for ancestor in ancestors %}
           {% methods = methods + ancestor.methods %}
         {% end %}
-        {%
-          methods = methods.select { |method| method.args.size == 1 && method.args[0].name == :context }
-          methods = methods.map { |method| method.name }.uniq
-        %}
+        {% methods = methods.select { |method| method.args.size > 0 && method.args[0].name == :context } %}
 
         case name
-        {% for method in methods %}
+        {% for method in methods.select { |method| method.args.size == 1 }.map { |method| method.name }.uniq %}
         when {{method.stringify}}
           return {{method}}(context)
         {% end %}
-        else
+        {% for method in methods.select { |method| method.args.size == 2 }.map { |method| method.name }.uniq %}
+        when {{method.stringify}}
+          return {{method}}(context, rule_id)
+        {% end %}
+      else
           raise %(Could not find action "#{name}")
         end
       {% end %}
@@ -467,6 +468,8 @@ module Marpa
                 rule["action"] = adverb[2]
               when "rank"
                 alternative_rank = adverb[2].to_i
+              else
+                rule[adverb[0]] = adverb[2]
               end
             end
 
@@ -549,6 +552,8 @@ module Marpa
             rule["action"] = adverb[2]
           when "rank"
             rank = adverb[2].to_i
+          else
+            rule[adverb[0]] = adverb[2]
           end
         end
 
