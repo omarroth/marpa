@@ -11,7 +11,7 @@ class JSONActions < Marpa::Actions
   end
 
   def do_string(context)
-    body = context[0].as(String).rchop('"').lchop('"')
+    body = context[1].as(String)
 
     body = body.gsub("\\'", "'")
     body = body.gsub("\\\"", "\"")

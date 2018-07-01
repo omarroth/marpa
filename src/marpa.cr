@@ -202,7 +202,13 @@ module Marpa
         end
 
         @matches.each do |match|
-          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], @position + 1, 1)
+          if @matches[0][0].size > 0
+            value = @position + 1
+          else
+            value = -1
+          end
+
+          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], value, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
             last_newline = input[0..@position].rindex("\n")
@@ -228,6 +234,7 @@ module Marpa
 
         @position += @matches[0][0].size
       end
+      @values[-2] = ""
 
       bocage = LibMarpa.marpa_b_new(recce, -1)
       if !bocage
