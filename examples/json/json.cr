@@ -16,7 +16,7 @@ OptionParser.parse! do |parser|
 end
 
 parser = Marpa::Parser.new
-actions = JSON_Actions.new
+actions = JSONActions.new
 stack = parser.parse(input, grammar, actions)
 json = actions.json
 

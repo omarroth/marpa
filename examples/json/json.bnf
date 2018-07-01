@@ -19,9 +19,8 @@ elements ::= value* proper => 1 separator => comma
 
 comma ~ ','
 
-string ::= '"' in_string '"' action => do_string
-in_string ~ /([^"\\]|\\[\"\\\/bftnrt]|\\u[a-fA-F0-9]{4})*/
-
+string ::= in_string action => do_string
+in_string ~ /"([^"\\]|\\[\"\\\/bftnrt]|\\u[a-fA-F0-9]{4})*"/
 number ~ /-?([\d]+)(\.\d+)?([eE][+-]?\d+)?/
 
 true ~ 'true'

@@ -6,7 +6,7 @@ describe Marpa do
     input = %q([1,"abc\nd\"ef","",true,-2.3,null,[],[1,2,3],{},{"a":1,"b":2}])
 
     parser = Marpa::Parser.new
-    actions = JSON_Actions.new
+    actions = JSONActions.new
     stack = parser.parse(input, grammar, actions)
     json = actions.json
 
@@ -48,7 +48,7 @@ describe Marpa do
     grammar = <<-END_BNF
     :start ::= S
     S ::= 'a'
-    S ::= 
+    S ::=
     END_BNF
 
     stack = parser.parse("", grammar)

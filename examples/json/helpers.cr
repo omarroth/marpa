@@ -1,4 +1,4 @@
-class JSON_Actions < Marpa::Actions
+class JSONActions < Marpa::Actions
   alias Type = Nil | Bool | Int64 | Float64 | String | Array(Type) | Hash(String, Type)
   property json
 
@@ -11,7 +11,7 @@ class JSON_Actions < Marpa::Actions
   end
 
   def do_string(context)
-    body = context[1].as(String)
+    body = context[0].as(String).rchop('"').lchop('"')
 
     body = body.gsub("\\'", "'")
     body = body.gsub("\\\"", "\"")

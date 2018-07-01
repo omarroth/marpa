@@ -190,11 +190,7 @@ module Marpa
           end
         end
 
-        @matches.sort_by! { |a, b| a.size }.reverse!
-        @position += matches[0][0].size
         @values[@position] = @matches[0][0]
-
-        @matches.select! { |a, b| a.size == @matches[0][0].size }
 
         # L0 symbols don't trigger completion events, so we do it here
         completions = @matches.select { |match| @lexemes[@symbols[match[1]]]?.try &.["completion"]? }
@@ -203,8 +199,11 @@ module Marpa
           events.call(event_name, self)
         end
 
+        @matches.sort_by! { |a, b| a.size }.reverse!
+        @matches.select! { |a, b| a.size == @matches[0][0].size }
+
         @matches.each do |match|
-          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], @position, 1)
+          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], @position + 1, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
             last_newline = input[0..@position].rindex("\n")
@@ -227,6 +226,8 @@ module Marpa
           error = LibMarpa.marpa_g_error(@grammar, p_error_string)
           raise "Earleme complete: #{error}"
         end
+
+        @position += @matches[0][0].size
       end
 
       bocage = LibMarpa.marpa_b_new(recce, -1)
@@ -291,7 +292,7 @@ module Marpa
         when LibMarpa::MarpaStepType::MARPA_STEP_TOKEN
           token = value.value
 
-          stack << @values[token.t_token_value]
+          stack << @values[token.t_token_value - 1]
         when LibMarpa::MarpaStepType::MARPA_STEP_NULLING_SYMBOL
           symbol = value.value
 
