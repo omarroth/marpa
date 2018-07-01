@@ -192,7 +192,7 @@ module Marpa
 
         @matches.sort_by! { |a, b| a.size }.reverse!
         @position += matches[0][0].size
-        @values[@position + 1] = @matches[0][0]
+        @values[@position] = @matches[0][0]
 
         @matches.select! { |a, b| a.size == @matches[0][0].size }
 
@@ -204,7 +204,7 @@ module Marpa
         end
 
         @matches.each do |match|
-          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], @position + 1, 1)
+          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], @position, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
             last_newline = input[0..@position].rindex("\n")
