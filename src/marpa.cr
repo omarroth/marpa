@@ -105,6 +105,7 @@ module Marpa
       LibMarpa.marpa_r_start_input(recce)
 
       @position = 0
+      @values = {} of Int32 => String
       buffer = StaticArray(Int32, 128).new(0_u8)
       event = uninitialized LibMarpa::MarpaEvent
       until @position == input.size
