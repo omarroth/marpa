@@ -79,13 +79,6 @@ module Marpa
       @lexer = builder.lexer
       @discards = builder.discards
 
-      # TODO: add proper handling for lexemes that are zero-length
-      @lexer.each do |symbol, regex|
-        if md = regex.match("")
-          raise "Lexeme is potentially zero-length: #{symbol}"
-        end
-      end
-
       encountered = @lexer.keys.map { |symbol| @symbols[symbol] }
       encountered += @rules.map { |k, v| @symbols[v["lhs"]] }
       encountered = @symbols.values - encountered
@@ -197,6 +190,8 @@ module Marpa
           end
         end
 
+        @matches.sort_by! { |a, b| a.size }.reverse!
+        @matches.select! { |a, b| a.size == @matches[0][0].size }
         @values[@position] = @matches[0][0]
 
         # L0 symbols don't trigger completion events, so we do it here
@@ -205,9 +200,6 @@ module Marpa
           event_name = @lexemes[@symbols[completion[1]]]["completion"]
           events.call(event_name, self)
         end
-
-        @matches.sort_by! { |a, b| a.size }.reverse!
-        @matches.select! { |a, b| a.size == @matches[0][0].size }
 
         @matches.each do |match|
           status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], @position + 1, 1)
