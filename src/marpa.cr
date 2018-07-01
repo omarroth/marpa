@@ -79,6 +79,13 @@ module Marpa
       @lexer = builder.lexer
       @discards = builder.discards
 
+      # TODO: add proper handling for lexemes that are zero-length
+      @lexer.each do |symbol, regex|
+        if md = regex.match("")
+          raise "Lexeme is potentially zero-length: #{symbol}"
+        end
+      end
+
       encountered = @lexer.keys.map { |symbol| @symbols[symbol] }
       encountered += @rules.map { |k, v| @symbols[v["lhs"]] }
       encountered = @symbols.values - encountered
