@@ -122,6 +122,12 @@ module Marpa
         end
 
         @matches = [] of {String, String}
+        @expected.each do |terminal|
+          md = @lexer[terminal].match(input, @position)
+          if md && md.begin == @position
+            @matches << {md[0], terminal}
+          end
+        end
 
         # Perform default rule
         events.call("default", self)
@@ -144,13 +150,6 @@ module Marpa
             end
 
             events.call(event_name, self)
-          end
-        end
-
-        @expected.each do |terminal|
-          md = @lexer[terminal].match(input, @position)
-          if md && md.begin == @position
-            @matches << {md[0], terminal}
           end
         end
 
