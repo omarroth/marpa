@@ -3,6 +3,7 @@ require "./marpa/*"
 module Marpa
   class Parser
     property grammar
+    property recce
     property symbols
     property lexemes
     property rules
@@ -16,6 +17,7 @@ module Marpa
 
     def initialize
       @grammar = uninitialized LibMarpa::MarpaGrammar
+      @recce = uninitialized LibMarpa::MarpaRecognizer
 
       @symbols = {} of String => Int32
       @lexemes = {} of Int32 => Hash(String, String)
@@ -103,15 +105,15 @@ module Marpa
       if status.value > 0
         raise "Precomputing grammar produced #{status}"
       end
-      recce = LibMarpa.marpa_r_new(@grammar)
-      LibMarpa.marpa_r_start_input(recce)
+      @recce = LibMarpa.marpa_r_new(@grammar)
+      LibMarpa.marpa_r_start_input(@recce)
 
       @position = 0
       @values = {} of Int32 => String
       buffer = StaticArray(Int32, 128).new(0_u8)
       event = uninitialized LibMarpa::MarpaEvent
       until @position == input.size
-        size = LibMarpa.marpa_r_terminals_expected(recce, buffer.to_unsafe)
+        size = LibMarpa.marpa_r_terminals_expected(@recce, buffer.to_unsafe)
 
         if size == 0
           raise "Parse exhausted after #{@position} characters"
@@ -210,7 +212,7 @@ module Marpa
             value = -1
           end
 
-          status = LibMarpa.marpa_r_alternative(recce, @symbols[match[1]], value, 1)
+          status = LibMarpa.marpa_r_alternative(@recce, @symbols[match[1]], value, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
             last_newline = input[0..@position].rindex("\n")
@@ -228,7 +230,7 @@ module Marpa
           end
         end
 
-        status = LibMarpa.marpa_r_earleme_complete(recce)
+        status = LibMarpa.marpa_r_earleme_complete(@recce)
         if status < 0
           error = LibMarpa.marpa_g_error(@grammar, p_error_string)
           raise "Earleme complete: #{error}"
@@ -238,7 +240,7 @@ module Marpa
       end
       @values[-2] = ""
 
-      bocage = LibMarpa.marpa_b_new(recce, -1)
+      bocage = LibMarpa.marpa_b_new(@recce, -1)
       if !bocage
         e = LibMarpa.marpa_g_error(@grammar, p_error_string)
         raise "Bocage complete: #{e}"
