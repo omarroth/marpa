@@ -7,6 +7,7 @@ module Marpa
     property lexemes
     property rules
     property lexer
+    property discard
     property discards
     property position
     property expected
@@ -21,11 +22,12 @@ module Marpa
       @rules = {} of Int32 => Hash(String, String)
 
       @lexer = {} of String => Regex
-      @discards = [] of String
+      @discard = [] of String
 
       @position = 0
       @expected = [] of String
       @matches = [] of {String, String}
+      @discards = [] of {String, String}
       @values = {} of Int32 => String
     end
 
@@ -77,7 +79,7 @@ module Marpa
       @rules = builder.rules
 
       @lexer = builder.lexer
-      @discards = builder.discards
+      @discard = builder.discard
 
       encountered = @lexer.keys.map { |symbol| @symbols[symbol] }
       encountered += @rules.map { |k, v| @symbols[v["lhs"]] }
@@ -129,6 +131,16 @@ module Marpa
           end
         end
 
+        @discards = [] of {String, String}
+        if @matches.empty?
+          @discard.each do |terminal|
+            md = input.match(@lexer[terminal], @position)
+            if md && md.begin == @position
+              @discards << {md[0], terminal}
+            end
+          end
+        end
+
         # Perform default rule
         events.call("default", self)
 
@@ -154,20 +166,7 @@ module Marpa
         end
 
         if @matches.empty?
-          discard = false
-          @discards.each do |terminal|
-            md = input.match(@lexer[terminal], @position)
-            if md && md.begin == @position
-              @matches << {md[0], terminal}
-              discard = true
-            end
-          end
-
-          if discard
-            @matches.sort_by! { |a, b| a.size }.reverse!
-            @position += @matches[0][0].size
-            next
-          else
+          if @discards.empty?
             last_newline = input[0..@position].rindex("\n")
             last_newline ||= 0
 
@@ -186,6 +185,10 @@ module Marpa
             end
 
             raise error_msg
+          else
+            @discards.sort_by! { |a, b| a.size }.reverse!
+            @position += @discards[0][0].size
+            next
           end
         end
 
@@ -359,7 +362,7 @@ module Marpa
     property rules
     property symbols
     property lexemes
-    property discards
+    property discard
 
     def initialize
       @config = uninitialized LibMarpa::MarpaConfig
@@ -373,7 +376,7 @@ module Marpa
       @rules = {} of Int32 => Hash(String, String)
 
       @lexer = {} of String => Regex
-      @discards = [] of String
+      @discard = [] of String
 
       @tokens = {} of String => Array(String) | Regex
       @elements = {} of String => Regex
@@ -595,7 +598,7 @@ module Marpa
       symbol = symbol.flatten
       symbol = symbol[0]
 
-      @discards << symbol
+      @discard << symbol
 
       ""
     end
