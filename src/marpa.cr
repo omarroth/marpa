@@ -196,7 +196,11 @@ module Marpa
 
         @matches.sort_by! { |a, b| a.size }.reverse!
         @matches.select! { |a, b| a.size == @matches[0][0].size }
-        @values[@position] = @matches[0][0]
+        if @matches[0][0].size > 0
+          @values[@position] = @matches[0][0]
+        else
+          @values[-@position] = @matches[0][0]
+        end
 
         # L0 symbols don't trigger completion events, so we do it here
         completions = @matches.select { |match| @lexemes[@symbols[match[1]]]?.try &.["completion"]? }
@@ -209,7 +213,7 @@ module Marpa
           if @matches[0][0].size > 0
             value = @position + 1
           else
-            value = -1
+            value = -@position + 1
           end
 
           status = LibMarpa.marpa_r_alternative(@recce, @symbols[match[1]], value, 1)
@@ -238,7 +242,6 @@ module Marpa
 
         @position += @matches[0][0].size
       end
-      @values[-2] = ""
 
       bocage = LibMarpa.marpa_b_new(@recce, -1)
       if !bocage
