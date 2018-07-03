@@ -383,23 +383,20 @@ module Marpa
       @lexer = {} of String => Regex
       @discard = [] of String
 
-      @tokens = {} of String => Array(String) | Regex
+      @tokens = {} of String => Array(Array(String))
       @elements = {} of String => Regex
     end
 
     def lexer
-      if !@tokens.empty?
-        5.times do
-          @tokens.each do |key, value|
-            case value
-            when Regex
-              @lexer[key] = value
-              @tokens.delete(key)
-            when Array
+      5.times do
+        if !@tokens.empty?
+          @tokens.each do |key, alternatives|
+            regexes = [] of Regex
+            alternatives.each do |alternative|
               regex = ""
               options = Regex::Options::None
 
-              value.each do |element|
+              alternative.each do |element|
                 if @lexer[element]?
                   options = options | @lexer[element].options
                   regex += @lexer[element].source
@@ -413,21 +410,25 @@ module Marpa
               end
 
               if regex != ""
-                @lexer[key] = Regex.new(regex, options)
-                @tokens.delete(key)
+                regexes << Regex.new(regex, options)
               end
+            end
+
+            if !regexes.empty?
+              @lexer[key] = Regex.union(regexes)
+              @tokens.delete(key)
             end
           end
         end
+      end
 
-        if !@tokens.empty?
-          error_msg = "Could not form L0 rules:\n"
-          @tokens.each do |key, value|
-            error_msg += "    #{key}\n"
-          end
-
-          raise error_msg
+      if !@tokens.empty?
+        error_msg = "Could not form L0 rules:\n"
+        @tokens.each do |key, value|
+          error_msg += "    #{key}\n"
         end
+
+        raise error_msg
       end
 
       return @lexer
@@ -465,14 +466,30 @@ module Marpa
         alternatives.each do |alternative|
           rhs = alternative[0].as(Array)
           rhs = rhs.flatten
+
           adverbs = alternative[1].as(Array)
           alternative_rank = rank
 
           case context[1]
           when ["::="]
             lhs_id = @symbols[lhs]
-            rhs_ids = rhs.map { |symbol| @symbols[symbol] }
 
+            rhs.each do |symbol|
+              if @elements[symbol]?
+                @tokens[symbol] = [[symbol]]
+
+                if !@symbols[symbol]?
+                  id = LibMarpa.marpa_g_symbol_new(@grammar)
+                  if id < 0
+                    raise "Could not create symbol ID for #{symbol}"
+                  end
+
+                  @symbols[symbol] = id
+                end
+              end
+            end
+
+            rhs_ids = rhs.map { |symbol| @symbols[symbol] }
             rule = {} of String => String
 
             adverbs.each do |adverb|
@@ -507,7 +524,11 @@ module Marpa
             rule["lhs"] = lhs
             @rules[rule_id] = rule
           when ["~"]
-            @tokens[lhs] = rhs
+            if @tokens[lhs]?
+              @tokens[lhs] << rhs
+            else
+              @tokens[lhs] = [rhs]
+            end
           end
         end
 
@@ -558,7 +579,22 @@ module Marpa
 
           case adverb[0]
           when "separator"
-            separator = @symbols[adverb[2]]
+            symbol = adverb[2]
+
+            if @elements[symbol]? && !@symbols[symbol]?
+              @tokens[symbol] = [[symbol]]
+
+              if !@symbols[symbol]?
+                id = LibMarpa.marpa_g_symbol_new(@grammar)
+                if id < 0
+                  raise "Could not create symbol ID for #{symbol}"
+                end
+
+                @symbols[symbol] = id
+              end
+            end
+
+            separator = @symbols[symbol]
           when "proper"
             if adverb[2] == "1"
               proper = LibMarpa::MARPA_PROPER_SEPARATION
@@ -591,8 +627,12 @@ module Marpa
         rule["lhs"] = lhs
         @rules[rule_id] = rule
       when ["~"]
-        regex = Regex.new(rhs + quantifier)
-        @tokens[lhs] = regex
+        @elements[rhs] = Regex.new(rhs + quantifier)
+        if @tokens[lhs]?
+          @tokens[lhs] << [rhs]
+        else
+          @tokens[lhs] = [[rhs]]
+        end
       end
 
       ""
@@ -688,14 +728,7 @@ module Marpa
       string = context[0].as(String)
       regex = Regex.escape(string)
       if !@tokens[string]?
-        @tokens[string] = Regex.new(regex[1..-2])
-
-        id = LibMarpa.marpa_g_symbol_new(@grammar)
-        if id < 0
-          raise "Could not create symbol ID for #{string}"
-        end
-
-        @symbols[string] = id
+        @elements[string] = Regex.new(regex[1..-2])
       end
 
       context
