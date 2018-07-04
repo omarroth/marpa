@@ -10,6 +10,7 @@ module Marpa
     property lexer
     property discard
     property discards
+    property input
     property position
     property expected
     property matches
@@ -25,6 +26,8 @@ module Marpa
 
       @lexer = {} of String => Regex
       @discard = [] of String
+
+      @input = ""
 
       @position = 0
       @expected = [] of String
@@ -82,6 +85,7 @@ module Marpa
 
       @lexer = builder.lexer
       @discard = builder.discard
+      @input = input
 
       encountered = @lexer.keys.map { |symbol| @symbols[symbol] }
       encountered += @rules.map { |k, v| @symbols[v["lhs"]] }
@@ -112,7 +116,7 @@ module Marpa
       @values = {} of Int32 => String
       buffer = StaticArray(Int32, 128).new(0_u8)
       event = uninitialized LibMarpa::MarpaEvent
-      until @position == input.size
+      until @position == @input.size
         size = LibMarpa.marpa_r_terminals_expected(@recce, buffer.to_unsafe)
 
         if size == 0
@@ -127,7 +131,7 @@ module Marpa
 
         @matches = [] of {String, String}
         @expected.each do |terminal|
-          md = @lexer[terminal].match(input, @position)
+          md = @lexer[terminal].match(@input, @position)
           if md && md.begin == @position
             @matches << {md[0], terminal}
           end
@@ -136,7 +140,7 @@ module Marpa
         @discards = [] of {String, String}
         if @matches.empty?
           @discard.each do |terminal|
-            md = input.match(@lexer[terminal], @position)
+            md = @input.match(@lexer[terminal], @position)
             if md && md.begin == @position
               @discards << {md[0], terminal}
             end
@@ -169,14 +173,14 @@ module Marpa
 
         if @matches.empty?
           if @discards.empty?
-            last_newline = input[0..@position].rindex("\n")
+            last_newline = @input[0..@position].rindex("\n")
             last_newline ||= 0
 
             col = @position - last_newline
-            row = input[0..@position].count("\n") + 1
+            row = @input[0..@position].count("\n") + 1
 
             error_msg = "Lexing error at row #{row}, column #{col}, (position: #{@position}) here:\n"
-            error_msg += input[last_newline..@position]
+            error_msg += @input[last_newline..@position]
             error_msg += "\n"
             error_msg += " " * Math.max(col - 1, 0)
             error_msg += "^\n"
@@ -219,11 +223,11 @@ module Marpa
           status = LibMarpa.marpa_r_alternative(@recce, @symbols[match[1]], value, 1)
 
           if status != LibMarpa::MarpaErrorCode::MARPA_ERR_NONE
-            last_newline = input[0..@position].rindex("\n")
+            last_newline = @input[0..@position].rindex("\n")
             last_newline ||= 0
 
             col = @position - last_newline
-            row = input[0..@position].count("\n") + 1
+            row = @input[0..@position].count("\n") + 1
 
             error_msg = "Unexpected symbol at line #{row}, character #{col}, expected: \n"
             @expected.each do |id|
