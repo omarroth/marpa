@@ -8,7 +8,7 @@ Expression ::= Number action => reduce
 || Expression '+' Expression action => add
 | Expression '-' Expression action => subtract
 
-Number ~ [\d]+
+Number ~ /-?([\d]+)(\.\d+)?([eE][+-]?\d+)?/
 
 :discard ~ whitespace
 whitespace ~ [\s]+

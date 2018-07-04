@@ -36,10 +36,14 @@ describe Marpa do
     grammar = File.read("examples/calculator/calculator.bnf")
 
     result = parser.parse("(10 + 4) - 6 * 3", grammar, actions)
-    result.should eq "-4"
+    result = result.as(String)
+    result = result.try &.to_i? || result.to_f
+    result.should eq -4
 
     result = parser.parse("3 ** 5 + 1", grammar, actions)
-    result.should eq "244"
+    result = result.as(String)
+    result = result.try &.to_i? || result.to_f
+    result.should eq 244
   end
 
   it "tests nulled rules" do

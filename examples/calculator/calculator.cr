@@ -3,7 +3,7 @@ require "../../src/marpa"
 require "./helpers"
 
 grammar = File.read("calculator.bnf")
-input = "5 * (3 + 2)"
+input = "5 * (3 + 2.1)"
 
 OptionParser.parse! do |parser|
   parser.banner = "Usage: json [arguments]"
@@ -18,4 +18,6 @@ end
 parser = Marpa::Parser.new
 actions = Calculator.new
 result = parser.parse(input, grammar, actions)
+result = result.as(String)
+result = result.try &.to_i? || result.to_f
 puts result
