@@ -131,8 +131,7 @@ module Marpa
 
         @matches = [] of {String, String}
         @expected.each do |terminal|
-          md = @lexer[terminal].match(@input, @position, Regex::Options::ANCHORED)
-          if md && md.begin == @position
+          if md = @lexer[terminal].match(@input, @position, Regex::Options::ANCHORED)
             @matches << {md[0], terminal}
           end
         end
@@ -140,8 +139,7 @@ module Marpa
         @discards = [] of {String, String}
         if @matches.empty?
           @discard.each do |terminal|
-            md = @lexer[terminal].match(@input, @position, Regex::Options::ANCHORED)
-            if md && md.begin == @position
+            if md = @lexer[terminal].match(@input, @position, Regex::Options::ANCHORED)
               @discards << {md[0], terminal}
             end
           end
