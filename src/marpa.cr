@@ -162,9 +162,7 @@ module Marpa
             when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_PREDICTED
               event_name = @lexemes[value]["prediction"]
             when LibMarpa::MarpaEventType::MARPA_EVENT_EARLEY_ITEM_THRESHOLD
-              raise "Reached maximum number of earley items, see https://metacpan.org/pod/distribution/Marpa-R2/pod/Scanless/R.pod#too_many_earley_items"
-            else
-              raise "Unimplemented event: #{event_type}"
+              next
             end
 
             events.call(event_name, self)
