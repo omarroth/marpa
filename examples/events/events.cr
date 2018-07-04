@@ -16,5 +16,5 @@ OptionParser.parse! do |parser|
 end
 
 parser = Marpa::Parser.new
-events = Events.new(input)
+events = Events.new
 puts parser.parse(input, grammar, events: events)

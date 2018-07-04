@@ -66,7 +66,7 @@ describe Marpa do
     parser = Marpa::Parser.new
     grammar = File.read("examples/events/events.bnf")
     input = "S4()))))"
-    events = Events.new(input)
+    events = Events.new
 
     stack = parser.parse(input, grammar, events: events)
 
