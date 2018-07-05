@@ -119,10 +119,6 @@ module Marpa
       until @position == @input.size
         size = LibMarpa.marpa_r_terminals_expected(@recce, buffer.to_unsafe)
 
-        if size == 0
-          raise "Parse exhausted after #{@position} characters"
-        end
-
         slice = buffer.to_slice[0, size]
         @expected = [] of String
         slice.each do |id|
@@ -145,7 +141,6 @@ module Marpa
           end
         end
 
-        # Perform default rule
         events.call("default", self)
 
         event_count = LibMarpa.marpa_g_event_count(@grammar)
@@ -161,6 +156,14 @@ module Marpa
               event_name = @lexemes[value]["prediction"]
             when LibMarpa::MarpaEventType::MARPA_EVENT_EARLEY_ITEM_THRESHOLD
               next
+            when LibMarpa::MarpaEventType::MARPA_EVENT_EXHAUSTED
+              if @discards.empty?
+                raise "Parse exhausted after #{@position} characters"
+              else
+                next
+              end
+            else
+              raise "Unimplemented event: #{event_type}"
             end
 
             events.call(event_name, self)
