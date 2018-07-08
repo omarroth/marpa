@@ -104,7 +104,11 @@ module Marpa
 
       p_error_string = String.new
       LibMarpa.marpa_g_error_clear(@grammar)
-      LibMarpa.marpa_g_precompute(@grammar)
+
+      if LibMarpa.marpa_g_is_precomputed(@grammar) < 1
+        LibMarpa.marpa_g_precompute(@grammar)
+      end
+
       status = LibMarpa.marpa_g_error(@grammar, p_error_string)
       if status.value > 0
         raise "Precomputing grammar produced #{status}"
