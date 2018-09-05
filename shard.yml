@@ -10,10 +10,6 @@ description: |
 libraries:
   libmarpa: ~> 8.6.0
 
-<<<<<<< HEAD
-crystal: 0.25.1
-=======
 crystal: 0.26.1
->>>>>>> ee1d837... Bump supported version
 
 license: MIT
