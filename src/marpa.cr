@@ -130,47 +130,46 @@ module Marpa
         end
 
         @matches = [] of {String, String}
+        @discards = [] of {String, String}
+
+        events.call("default", self)
+
+        event_count = LibMarpa.marpa_g_event_count(@grammar)
+        event_count.times do |i|
+          event_type = LibMarpa.marpa_g_event(@grammar, pointerof(event), i)
+          value = event.t_value
+
+          case event_type
+          when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_COMPLETED
+            event_name = @lexemes[value]["completion"]
+          when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_PREDICTED
+            event_name = @lexemes[value]["prediction"]
+          when LibMarpa::MarpaEventType::MARPA_EVENT_EARLEY_ITEM_THRESHOLD
+            next
+          when LibMarpa::MarpaEventType::MARPA_EVENT_EXHAUSTED
+            if @discards.empty?
+              raise "Parse exhausted after #{@position} characters"
+            else
+              next
+            end
+          else
+            raise "Unimplemented event: #{event_type}"
+          end
+
+          events.call(event_name, self)
+        end
+
         @expected.each do |terminal|
           if md = @lexer[terminal].match(@input, @position, Regex::Options::ANCHORED)
             @matches << {md[0], terminal}
           end
         end
 
-        @discards = [] of {String, String}
         if @matches.empty?
           @discard.each do |terminal|
             if md = @lexer[terminal].match(@input, @position, Regex::Options::ANCHORED)
               @discards << {md[0], terminal}
             end
-          end
-        end
-
-        events.call("default", self)
-
-        event_count = LibMarpa.marpa_g_event_count(@grammar)
-        if event_count > 0
-          event_count.times do |i|
-            event_type = LibMarpa.marpa_g_event(@grammar, pointerof(event), i)
-            value = event.t_value
-
-            case event_type
-            when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_COMPLETED
-              event_name = @lexemes[value]["completion"]
-            when LibMarpa::MarpaEventType::MARPA_EVENT_SYMBOL_PREDICTED
-              event_name = @lexemes[value]["prediction"]
-            when LibMarpa::MarpaEventType::MARPA_EVENT_EARLEY_ITEM_THRESHOLD
-              next
-            when LibMarpa::MarpaEventType::MARPA_EVENT_EXHAUSTED
-              if @discards.empty?
-                raise "Parse exhausted after #{@position} characters"
-              else
-                next
-              end
-            else
-              raise "Unimplemented event: #{event_type}"
-            end
-
-            events.call(event_name, self)
           end
         end
 
