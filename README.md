@@ -31,19 +31,25 @@ require "marpa"
 parser = Marpa::Parser.new
 
 grammar = <<-'END_BNF'
-:start ::= language
+# Grammar from https://metacpan.org/pod/distribution/Marpa-R2/pod/Semantics.pod
+:start ::= Expression
+Expression ::= Number
+  | '(' Expression ')'
+ || Expression '**' Expression
+ || Expression '*' Expression
+  | Expression '/' Expression
+ || Expression '+' Expression
+  | Expression '-' Expression
 
-language ::= number op_plus number
-number ~ [\d]+
-op_plus ~ '+'
+Number ~ [\d]+
 
 :discard ~ whitespace
 whitespace ~ [\s]+
 END_BNF
 
-input = "100 + 200"
+input = "3 + 5 * 10"
 
-parser.parse(input, grammar) # => ["100", "+", "200"]
+pp parser.parse(input, grammar) # => [["3"], "+", [["5"], "*", ["10"]]]
 ```
 
 See `examples/` for a more thorough demonstration of this interface's capabilities, including a JSON parser.
