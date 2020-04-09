@@ -335,7 +335,8 @@ module Marpa
         when LibMarpa::MarpaStepType::MARPA_STEP_INACTIVE
           stack = stack[0]
           break
-        when LibMarpa::MarpaStepType::MARPA_STEP_INITIAL
+        else
+          raise "Unimplemented step type #{step_type}"
         end
       end
 
@@ -551,6 +552,7 @@ module Marpa
             else
               @tokens[lhs] = [rhs]
             end
+          else nil # Ignore
           end
         end
 
@@ -655,6 +657,7 @@ module Marpa
         else
           @tokens[lhs] = [[rhs]]
         end
+      else nil # Ignore
       end
 
       ""
@@ -705,6 +708,7 @@ module Marpa
           pause = adverb[2].as(String)
         when "event"
           event = adverb[2].as(String)
+        else nil # Ignore
         end
       end
 
@@ -719,6 +723,7 @@ module Marpa
       when "after"
         lexeme["completion"] = event
         status = LibMarpa.marpa_g_symbol_is_completion_event_set(grammar, symbol_id, 1)
+      else nil # Ignore
       end
 
       @lexemes[symbol_id] = lexeme
@@ -778,6 +783,7 @@ module Marpa
           options = options | Regex::Options::MULTILINE
         when "x"
           options = options | Regex::Options::EXTENDED
+        else nil # Ignore
         end
       end
 

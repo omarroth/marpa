@@ -15,7 +15,7 @@ class JSONActions < Marpa::Actions
 
     body = body.gsub("\\'", "'")
     body = body.gsub("\\\"", "\"")
-    body = body.gsub("\\\/", "\/")
+    body = body.gsub("\\/", "/")
     body = body.gsub("\\\\", "\\")
     body = body.gsub("\\n", "\n")
     body = body.gsub("\\r", "\r")
